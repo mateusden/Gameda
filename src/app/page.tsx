@@ -1,69 +1,106 @@
-import Image from "next/image";
+import { PlusCircle, Gamepad2, Users, Star, Clock, MessageSquare, Heart } from "lucide-react";
 
 export default function Home() {
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert h-5 w-[100px]"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the{" "}
-            <code className="rounded bg-black/[.06] px-1.5 py-0.5 font-mono text-[0.9em] dark:bg-white/[.08]">
-              page.tsx
-            </code>{" "}
-            file.
+    <div className="space-y-8 pb-12">
+      {/* Seção de Boas-vindas e Banner para Adicionar Jogos */}
+      <section className="bg-[#F3EFE6] border border-[#343A35]/10 rounded-2xl p-6 sm:p-8 shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6">
+        <div className="space-y-2">
+          <h1 className="text-3xl font-bold tracking-tight text-[#343A35]">
+            Bem-vindo de volta ao Gameda! 🎮
           </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
+          <p className="text-[#343A35]/80 max-w-xl text-sm sm:text-base">
+            Organize sua biblioteca, registre suas sessões de jogatina e veja o que seus amigos estão jogando hoje.
           </p>
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert h-[14px] w-4"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={14}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
+        <button className="flex items-center gap-2 bg-[#66836A] hover:bg-[#263A30] text-white px-5 py-3 rounded-xl font-medium transition-colors shadow-sm shrink-0">
+          <PlusCircle className="w-5 h-5" />
+          Adicionar à Biblioteca
+        </button>
+      </section>
+
+      {/* Grid Principal: Feed e Barra Lateral */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        
+        {/* Coluna Principal: Feed de Atividades */}
+        <div className="lg:col-span-2 space-y-6">
+          <div className="flex items-center justify-between">
+            <h2 className="text-xl font-bold text-[#343A35] flex items-center gap-2">
+              <Users className="w-5 h-5 text-[#66836A]" />
+              Atividades dos Amigos
+            </h2>
+          </div>
+
+          {/* Card de Exemplo no Feed */}
+          <div className="bg-[#F3EFE6] border border-[#343A35]/10 rounded-xl p-5 space-y-4 shadow-sm">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-[#66836A]/20 flex items-center justify-center font-bold text-[#66836A]">
+                  M
+                </div>
+                <div>
+                  <span className="font-semibold text-[#343A35] block">Mariana Souza</span>
+                  <span className="text-xs text-[#343A35]/70">registrou uma sessão há 2 horas</span>
+                </div>
+              </div>
+              <span className="text-xs bg-[#66836A]/10 text-[#66836A] font-semibold px-2.5 py-1 rounded-full">
+                PC
+              </span>
+            </div>
+
+            <div className="bg-[#E9E3D5] rounded-lg p-4 flex gap-4 items-center border border-[#343A35]/5">
+              <div className="w-16 h-20 bg-[#343A35]/10 rounded-md flex items-center justify-center text-xs text-[#343A35]/60 font-medium shrink-0">
+                Capa
+              </div>
+              <div className="space-y-1">
+                <h3 className="font-bold text-[#343A35] text-lg">Hades II</h3>
+                <div className="flex flex-wrap items-center gap-3 text-sm text-[#343A35]/80">
+                  <span className="flex items-center gap-1"><Clock className="w-4 h-4 text-[#66836A]" /> 2h 30m</span>
+                  <span className="flex items-center gap-1"><Star className="w-4 h-4 text-amber-600 fill-amber-600" /> Zerado</span>
+                </div>
+                <p className="text-sm text-[#343A35]/90 italic pt-1">
+                  &quot;Finalmente consegui derrotar o chefe final da superfície! Que trilha sonora espetacular.&quot;
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-6 text-sm text-[#343A35]/70 pt-2 border-t border-[#343A35]/10">
+              <button className="hover:text-[#66836A] transition-colors flex items-center gap-1.5 font-medium">
+                <Heart className="w-4 h-4" /> Curtir
+              </button>
+              <button className="hover:text-[#66836A] transition-colors flex items-center gap-1.5 font-medium">
+                <MessageSquare className="w-4 h-4" /> Comentar
+              </button>
+            </div>
+          </div>
         </div>
-      </main>
+
+        {/* Coluna Lateral: Recomendações */}
+        <div className="space-y-6">
+          <div className="bg-[#F3EFE6] border border-[#343A35]/10 rounded-xl p-5 space-y-4 shadow-sm">
+            <h2 className="text-lg font-bold text-[#343A35] flex items-center gap-2">
+              <Gamepad2 className="w-5 h-5 text-[#66836A]" />
+              Recomendações
+            </h2>
+            <div className="space-y-2">
+              {[
+                { name: "Elden Ring", genre: "RPG de Ação" },
+                { name: "Silksong", genre: "Metroidvania" },
+                { name: "Balatro", genre: "Roguelike" }
+              ].map((jogo, index) => (
+                <div key={index} className="flex items-center justify-between p-2.5 hover:bg-[#E9E3D5]/60 rounded-lg transition-colors cursor-pointer group">
+                  <div>
+                    <span className="font-medium text-[#343A35] text-sm block group-hover:text-[#66836A] transition-colors">{jogo.name}</span>
+                    <span className="text-xs text-[#343A35]/60">{jogo.genre}</span>
+                  </div>
+                  <span className="text-xs text-[#66836A] font-semibold bg-[#66836A]/10 px-2 py-1 rounded-md">Ver</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+
+      </div>
     </div>
   );
 }

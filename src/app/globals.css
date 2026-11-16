@@ -6,10 +6,59 @@
   --color-gameda-text: #343A35;
   --color-gameda-primary: #66836A;
   --color-gameda-primary-dark: #263A30;
+  --color-gameda-accent: #A9574D;
+  --color-gameda-border: #D8D1C3;
+
+  --animate-fadeIn: fadeIn 0.25s ease-out;
+
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+      transform: translateY(4px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+}
+
+html {
+  color-scheme: light;
+  scroll-behavior: smooth;
 }
 
 body {
   background-color: var(--color-gameda-bg);
   color: var(--color-gameda-text);
   font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-gameda-primary);
+  outline-offset: 2px;
+  border-radius: 0.375rem;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  * {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+@font-face {
+  font-family: "Crilo";
+  src: url("/fonts/crilo-demo.otf") format("opentype");
+  font-weight: bold;
+  font-style: normal;
+}
+
+.logo {
+  font-family: "Crilo", sans-serif;
+  margin-bottom: -9px;
 }

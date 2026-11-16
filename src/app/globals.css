@@ -61,4 +61,6 @@ body {
 .logo {
   font-family: "Crilo", sans-serif;
   margin-bottom: -9px;
+  -webkit-text-stroke: 1.2px currentColor; /* Aumenta a espessura do traço */
+  letter-spacing: 0.02em; /* Evita que as letras encostem uma na outra */
 }

@@ -169,10 +169,10 @@ async function ProfileContent({ params }: ProfilePageProps) {
             <Avatar
               src={profile.avatar_url}
               name={profile.username}
-              className="w-20 h-20 sm:w-24 sm:h-24 text-3xl border-2 border-[#66836A]/30"
+              className="w-24 h-24 sm:w-30 sm:h-30 text-3xl border-3 border-[#66836A]/70"
             />
             <div className="space-y-1 min-w-0">
-              <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-[#343A35] truncate">
+              <h1 className="text-3xl sm:text-4xl font-bold tracking-tight text-[#343A35] truncate">
                 @{profile.username}
               </h1>
               <p className="text-sm font-medium text-[#66836A]">

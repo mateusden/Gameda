@@ -11,7 +11,24 @@ export async function GET(request: NextRequest) {
   if (code) {
     const supabase = await createClient();
     const { error } = await supabase.auth.exchangeCodeForSession(code);
+
     if (!error) {
+      // Conta nova com @ automático: leva para escolher o @
+      const { data: claims } = await supabase.auth.getClaims();
+      const userId = claims?.claims?.sub;
+
+      if (userId) {
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("username")
+          .eq("id", userId)
+          .maybeSingle();
+
+        if (profile && /^user_[0-9a-f]{10}$/.test(profile.username)) {
+          return NextResponse.redirect(`${origin}/settings/profile?novo=1`);
+        }
+      }
+
       return NextResponse.redirect(`${origin}${safeNext}`);
     }
   }

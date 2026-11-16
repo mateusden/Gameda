@@ -5,7 +5,13 @@ import EditProfileForm from "@/components/profile/edit-profile-form";
 import AvatarUploader from "@/components/profile/avatar-uploader";
 import { createClient } from "@/lib/supabase/server";
 
-async function EditProfileContent() {
+interface EditProfilePageProps {
+  searchParams: Promise<{ novo?: string }>;
+}
+
+async function EditProfileContent({ searchParams }: EditProfilePageProps) {
+  const { novo } = await searchParams;
+
   const supabase = await createClient();
   const { data: claimsData } = await supabase.auth.getClaims();
   const userId = claimsData?.claims?.sub;
@@ -27,6 +33,13 @@ async function EditProfileContent() {
         <p className="text-sm text-[#343A35]/70 mt-1">Escolha como você aparece no Gameda.</p>
       </div>
 
+      {novo && (
+        <div className="bg-[#66836A]/10 border border-[#66836A]/30 rounded-xl px-4 py-3 text-sm text-[#343A35]">
+          <strong className="text-[#66836A]">Bem-vindo ao Gameda!</strong> Escolha o seu @ abaixo.
+          Seu nome e sua foto vieram do Google, e você pode trocar os dois aqui.
+        </div>
+      )}
+
       <div className="bg-[#F3EFE6] border border-[#343A35]/10 rounded-2xl p-6 sm:p-8 shadow-sm">
         <AvatarUploader
           userId={profile.id}
@@ -40,10 +53,10 @@ async function EditProfileContent() {
   );
 }
 
-export default function EditProfilePage() {
+export default function EditProfilePage({ searchParams }: EditProfilePageProps) {
   return (
     <Suspense fallback={<LoadingSpinner text="Carregando..." />}>
-      <EditProfileContent />
+      <EditProfileContent searchParams={searchParams} />
     </Suspense>
   );
 }

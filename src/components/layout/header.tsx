@@ -78,7 +78,7 @@ function SearchBox({ open, onOpenChange }: SearchBoxProps) {
           onClick={toggle}
           className="flex cursor-pointer items-center transition-colors hover:text-[#66836A]"
         >
-          <Search size={21} />
+          <Search size={22} />
         </button>
 
         <input
@@ -171,7 +171,7 @@ export default function Header() {
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:h-20 sm:px-6 md:grid md:grid-cols-[1fr_auto_1fr]">
         <Link
           href="/"
-          className="logo text-2xl font-bold tracking-tight text-[#343A35] sm:text-4xl"
+          className="logo text-3xl tracking-tight text-[#343A35] sm:text-4xl"
         >
           gameda
         </Link>
@@ -189,14 +189,14 @@ export default function Header() {
           ))}
         </nav>
 
-        <div className="flex items-center gap-4 text-[#343A35] sm:gap-5 md:justify-end">
+        <div className="flex items-center gap-3 text-[#343A35] sm:gap-4 md:justify-end">
           <SearchBox open={searchOpen} onOpenChange={setSearchOpen} />
 
           <button
             aria-label="Notificações"
             className={`${hideOnMobileWhenSearching} cursor-pointer items-center transition-colors hover:text-[#66836A]`}
           >
-            <Bell size={21} />
+            <Bell size={22} />
           </button>
 
           <UserMenu className={hideOnMobileWhenSearching} />

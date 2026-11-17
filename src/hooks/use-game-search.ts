@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { searchCatalog } from "@/lib/catalog";
 
 export interface SearchResult {
   slug: string;
@@ -38,12 +37,7 @@ export function useGameSearch(query: string, limit = 8) {
         setResults(data.results);
       } catch {
         if (controller.signal.aborted) return;
-        // Reserva: lista local
-        setResults(
-          searchCatalog(term)
-            .slice(0, limit)
-            .map((game) => ({ ...game, coverUrl: null }))
-        );
+        setResults([]);
       } finally {
         if (!controller.signal.aborted) setLoading(false);
       }

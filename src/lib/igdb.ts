@@ -135,3 +135,9 @@ export async function getGamesBySlugs(slugs: string[]): Promise<GameInfo[]> {
   const list = clean.map((s) => `"${s}"`).join(",");
   return queryGames(`fields ${FIELDS}; where slug = (${list}); limit ${clean.length};`);
 }
+
+export async function getPopularGames(limit = 12): Promise<GameInfo[]> {
+  return queryGames(
+    `fields ${FIELDS}; where total_rating_count > 200 & version_parent = null & first_release_date != null; sort total_rating_count desc; limit ${limit};`
+  );
+}

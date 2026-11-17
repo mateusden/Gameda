@@ -16,6 +16,8 @@ import { getGameBySlug } from "@/lib/igdb";
 import { formatHours } from "@/lib/library";
 import { createClient } from "@/lib/supabase/server";
 import Avatar from "@/components/ui/avatar";
+import LikeButton from "@/components/social/like-button";
+import Comments, { type CommentItem } from "@/components/social/comments";
 
 interface GameDetailPageProps {
   params: Promise<{ id: string }>;
@@ -93,6 +95,8 @@ async function GameContent({ params }: GameDetailPageProps) {
 
   let entry: EntryRow | null = null;
   let reviews: ReviewRow[] = [];
+  let likeRows: { review_id: number; user_id: string }[] = [];
+  let commentRows: (CommentItem & { review_id: number })[] = [];
 
   if (gameRow) {
     const [entryRes, reviewsRes] = await Promise.all([
@@ -117,6 +121,31 @@ async function GameContent({ params }: GameDetailPageProps) {
     ]);
     entry = (entryRes.data as unknown as EntryRow | null) ?? null;
     reviews = (reviewsRes.data ?? []) as unknown as ReviewRow[];
+
+    if (reviews.length > 0) {
+      const { data: likesData } = await supabase
+        .from("likes")
+        .select("review_id, user_id")
+        .in(
+          "review_id",
+          reviews.map((r) => r.id),
+        );
+      likeRows = likesData ?? [];
+
+      const { data: commentsData } = await supabase
+        .from("comments")
+        .select(
+          "id, user_id, review_id, parent_id, body, created_at, profiles(username, avatar_url)",
+        )
+        .in(
+          "review_id",
+          reviews.map((r) => r.id),
+        )
+        .order("created_at", { ascending: true });
+      commentRows = (commentsData ?? []) as unknown as (CommentItem & {
+        review_id: number;
+      })[];
+    }
   }
 
   const mySessions = (entry?.library_platforms ?? [])
@@ -131,6 +160,13 @@ async function GameContent({ params }: GameDetailPageProps) {
 
   const canReview = Boolean(viewerId && entry && totalMinutes > 0);
   const needsSession = Boolean(viewerId && entry && totalMinutes === 0);
+
+  const likeCount = new Map<number, number>();
+  const likedByMe = new Set<number>();
+  for (const like of likeRows) {
+    likeCount.set(like.review_id, (likeCount.get(like.review_id) ?? 0) + 1);
+    if (like.user_id === viewerId) likedByMe.add(like.review_id);
+  }
 
   return (
     <div className="space-y-8 pb-12 max-w-5xl mx-auto">
@@ -333,6 +369,25 @@ async function GameContent({ params }: GameDetailPageProps) {
                   <p className="text-sm text-[#343A35]/90 leading-relaxed">
                     {review.body}
                   </p>
+                  <div className="pt-3 border-t border-[#343A35]/10 flex-row flex gap-5">
+                    <div className="flex items-center gap-5">
+                      <LikeButton
+                        target={{ kind: "review", id: review.id }}
+                        path={`/game/${igdbGame.slug}`}
+                        initialCount={likeCount.get(review.id) ?? 0}
+                        initialLiked={likedByMe.has(review.id)}
+                        viewerId={viewerId}
+                      />
+                    </div>
+                    <Comments
+                      target={{ kind: "review", id: review.id }}
+                      path={`/game/${igdbGame.slug}`}
+                      comments={commentRows.filter(
+                        (c) => c.review_id === review.id,
+                      )}
+                      viewerId={viewerId}
+                    />
+                  </div>
                 </div>
               ))}
             </div>

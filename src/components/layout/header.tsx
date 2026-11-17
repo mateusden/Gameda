@@ -7,6 +7,7 @@ import { Search, Bell, UserCircle } from "lucide-react";
 import GameCover from "@/components/ui/game-cover";
 import { useGameSearch } from "@/hooks/use-game-search";
 import UserMenu from "@/components/layout/user-menu";
+import NotificationsBell from "@/components/layout/notifications-bell";
 
 const navItems = [
   { href: "/", label: "Início" },
@@ -66,10 +67,11 @@ function SearchBox({ open, onOpenChange }: SearchBoxProps) {
       {/* A lupa fica à esquerda; a barra cresce para a direita e empurra a lupa */}
       <form
         onSubmit={handleSubmit}
-        className={`flex items-center rounded-full border py-1.5 transition-all duration-300 ${open
+        className={`flex items-center rounded-full border py-1.5 transition-all duration-300 ${
+          open
             ? "border-[#343A35]/10 bg-[#F3EFE6] px-3"
             : "border-transparent px-0"
-          }`}
+        }`}
       >
         <button
           type="button"
@@ -90,8 +92,11 @@ function SearchBox({ open, onOpenChange }: SearchBoxProps) {
           tabIndex={open ? 0 : -1}
           placeholder="Buscar jogos..."
           aria-label="Buscar jogos"
-          className={`bg-transparent text-sm text-[#343A35] placeholder:text-[#343A35]/50 outline-none transition-all duration-300 ${open ? "ml-2 w-28 opacity-100 sm:w-40 lg:w-48" : "ml-0 w-0 opacity-0"
-            }`}
+          className={`bg-transparent text-sm text-[#343A35] placeholder:text-[#343A35]/50 outline-none transition-all duration-300 ${
+            open
+              ? "ml-2 w-28 opacity-100 sm:w-40 lg:w-48"
+              : "ml-0 w-0 opacity-0"
+          }`}
         />
       </form>
 
@@ -112,7 +117,11 @@ function SearchBox({ open, onOpenChange }: SearchBoxProps) {
                     onClick={close}
                     className="group flex items-center gap-3 rounded-lg p-2 transition-colors hover:bg-[#E9E3D5]/70"
                   >
-                    <GameCover title={game.title} coverUrl={game.coverUrl} className="h-12 w-9 text-xs" />
+                    <GameCover
+                      title={game.title}
+                      coverUrl={game.coverUrl}
+                      className="h-12 w-9 text-xs"
+                    />
                     <div className="min-w-0">
                       <span className="block truncate text-sm font-medium text-[#343A35] transition-colors group-hover:text-[#66836A]">
                         {game.title}
@@ -158,9 +167,10 @@ export default function Header() {
     href === "/" ? pathname === "/" : pathname.startsWith(href);
 
   const linkClass = (href: string) =>
-    `text-sm transition-colors ${isActive(href)
-      ? "font-semibold text-[#66836A]"
-      : "font-medium text-[#343A35] hover:text-[#66836A]"
+    `text-sm transition-colors ${
+      isActive(href)
+        ? "font-semibold text-[#66836A]"
+        : "font-medium text-[#343A35] hover:text-[#66836A]"
     }`;
 
   // No celular, esconde os outros ícones enquanto a busca está aberta, para caber
@@ -176,7 +186,10 @@ export default function Header() {
           gameda
         </Link>
 
-        <nav className="hidden items-center gap-8 md:flex" aria-label="Principal">
+        <nav
+          className="hidden items-center gap-8 md:flex"
+          aria-label="Principal"
+        >
           {navItems.map((item) => (
             <Link
               key={item.href}
@@ -192,12 +205,7 @@ export default function Header() {
         <div className="flex items-center gap-3 text-[#343A35] sm:gap-4 md:justify-end">
           <SearchBox open={searchOpen} onOpenChange={setSearchOpen} />
 
-          <button
-            aria-label="Notificações"
-            className={`${hideOnMobileWhenSearching} cursor-pointer items-center transition-colors hover:text-[#66836A]`}
-          >
-            <Bell size={22} />
-          </button>
+          <NotificationsBell className={hideOnMobileWhenSearching} />
 
           <UserMenu className={hideOnMobileWhenSearching} />
         </div>

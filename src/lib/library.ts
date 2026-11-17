@@ -1,5 +1,17 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import type { GameStatus, LibraryGame } from "@/lib/mock-games";
+
+export type GameStatus = "Jogando" | "Quero jogar" | "Zerado" | "Pausado";
+
+export interface LibraryGame {
+  id: number;
+  slug: string;
+  title: string;
+  platform: string;
+  hours: string;
+  status: GameStatus;
+}
+
+export const statusTabs: GameStatus[] = ["Jogando", "Quero jogar", "Zerado", "Pausado"];
 
 export const statusLabel: Record<string, GameStatus> = {
   quero_jogar: "Quero jogar",

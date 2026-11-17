@@ -4,23 +4,30 @@ import { useState } from "react";
 import Link from "next/link";
 import { Clock, Star } from "lucide-react";
 import SlugCover from "@/components/ui/slug-cover";
-import { statusTabs, type GameStatus, type LibraryGame } from "@/lib/mock-games";
+import { statusTabs, type GameStatus, type LibraryGame } from "@/lib/library";
+
+type Tab = "Todos" | GameStatus;
+
+const tabs: Tab[] = ["Todos", ...statusTabs];
 
 export default function ProfileLibrary({ games }: { games: LibraryGame[] }) {
-  const [activeTab, setActiveTab] = useState<GameStatus>("Jogando");
+  const [activeTab, setActiveTab] = useState<Tab>("Todos");
 
-  const filtered = games.filter((game) => game.status === activeTab);
+  const filtered =
+    activeTab === "Todos" ? games : games.filter((game) => game.status === activeTab);
 
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap gap-2">
-        {statusTabs.map((tab) => {
-          const count = games.filter((g) => g.status === tab).length;
+        {tabs.map((tab) => {
+          const count =
+            tab === "Todos" ? games.length : games.filter((g) => g.status === tab).length;
           const isSelected = activeTab === tab;
           return (
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
+              aria-pressed={isSelected}
               className={`px-3.5 py-1.5 rounded-xl text-sm font-medium transition-all flex items-center gap-2 cursor-pointer active:scale-95 ${
                 isSelected
                   ? "bg-[#66836A] text-white shadow-sm"
@@ -53,9 +60,16 @@ export default function ProfileLibrary({ games }: { games: LibraryGame[] }) {
                 <h3 className="font-bold text-[#343A35] leading-tight group-hover:text-[#66836A] transition-colors truncate">
                   {game.title}
                 </h3>
-                <span className="inline-block text-xs font-semibold text-[#66836A] bg-[#66836A]/10 px-2 py-0.5 rounded-md">
-                  {game.platform}
-                </span>
+                <div className="flex flex-wrap items-center gap-1.5">
+                  <span className="inline-block text-xs font-semibold text-[#66836A] bg-[#66836A]/10 px-2 py-0.5 rounded-md">
+                    {game.platform}
+                  </span>
+                  {activeTab === "Todos" && (
+                    <span className="inline-block text-xs font-medium text-[#343A35]/80 bg-[#343A35]/10 px-2 py-0.5 rounded-md">
+                      {game.status}
+                    </span>
+                  )}
+                </div>
                 <div className="flex items-center gap-3 text-xs text-[#343A35]/70">
                   <span className="flex items-center gap-1">
                     <Clock className="w-3.5 h-3.5 text-[#66836A]" /> {game.hours}
@@ -73,7 +87,9 @@ export default function ProfileLibrary({ games }: { games: LibraryGame[] }) {
       ) : (
         <div className="py-8 text-center bg-[#F3EFE6] rounded-xl border border-dashed border-[#343A35]/20">
           <p className="text-[#343A35]/70 text-sm">
-            Nenhum jogo com o status &quot;{activeTab}&quot;.
+            {activeTab === "Todos"
+              ? "Nenhum jogo na biblioteca ainda."
+              : `Nenhum jogo com o status "${activeTab}".`}
           </p>
         </div>
       )}

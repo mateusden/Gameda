@@ -1,20 +1,33 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
-import { Search, PlusCircle } from "lucide-react";
+import { Search } from "lucide-react";
 import SlugCover from "@/components/ui/slug-cover";
-import { catalog } from "@/lib/catalog";
+import RequestGame from "@/components/explore/request-game";
 import { useGameSearch, type SearchResult } from "@/hooks/use-game-search";
-
-const featured: SearchResult[] = catalog.map((game) => ({
-  ...game,
-  coverUrl: null,
-}));
 
 export default function ExplorePage() {
   const [query, setQuery] = useState("");
+  const [featured, setFeatured] = useState<SearchResult[]>([]);
+  const [featuredLoading, setFeaturedLoading] = useState(true);
   const { results, loading } = useGameSearch(query, 18);
+
+  useEffect(() => {
+    let active = true;
+    fetch("/api/featured")
+      .then((res) => (res.ok ? res.json() : { results: [] }))
+      .then((data) => {
+        if (active) setFeatured(data.results ?? []);
+      })
+      .catch(() => {})
+      .finally(() => {
+        if (active) setFeaturedLoading(false);
+      });
+    return () => {
+      active = false;
+    };
+  }, []);
 
   const isSearching = query.trim().length >= 2;
   const games = isSearching ? results : featured;
@@ -23,9 +36,7 @@ export default function ExplorePage() {
     <div className="space-y-8 pb-12">
       <div className="border-b border-[#343A35]/10 pb-6 space-y-4">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight text-[#343A35]">
-            Explorar
-          </h1>
+          <h1 className="text-3xl font-bold tracking-tight text-[#343A35]">Explorar</h1>
           <p className="text-[#343A35]/80 text-sm sm:text-base mt-1">
             Descubra jogos no catálogo do Gameda.
           </p>
@@ -44,12 +55,12 @@ export default function ExplorePage() {
         </label>
       </div>
 
-      {!isSearching && (
-        <h2 className="text-lg font-bold text-[#343A35]">Em destaque</h2>
-      )}
+      {!isSearching && <h2 className="text-lg font-bold text-[#343A35]">Em destaque</h2>}
 
-      {isSearching && loading && games.length === 0 && (
-        <p className="text-sm text-[#343A35]/70">Buscando...</p>
+      {((isSearching && loading) || (!isSearching && featuredLoading)) && games.length === 0 && (
+        <p className="text-sm text-[#343A35]/70">
+          {isSearching ? "Buscando..." : "Carregando destaques..."}
+        </p>
       )}
 
       {games.length > 0 && (
@@ -70,9 +81,7 @@ export default function ExplorePage() {
                 <h3 className="font-bold text-[#343A35] text-lg leading-tight group-hover:text-[#66836A] transition-colors">
                   {game.title}
                 </h3>
-                {game.genre && (
-                  <p className="text-xs text-[#343A35]/70">{game.genre}</p>
-                )}
+                {game.genre && <p className="text-xs text-[#343A35]/70">{game.genre}</p>}
                 <div className="flex flex-wrap gap-1.5">
                   {game.platforms.slice(0, 3).map((platform) => (
                     <span
@@ -99,10 +108,7 @@ export default function ExplorePage() {
               Não achou o que procurava? Você pode pedir a inclusão no catálogo.
             </p>
           </div>
-          <button className="inline-flex items-center gap-2 bg-[#66836A] hover:bg-[#263A30] active:scale-95 text-white px-4 py-2.5 rounded-xl font-medium transition-all shadow-sm cursor-pointer">
-            <PlusCircle className="w-5 h-5" />
-            Solicitar inclusão
-          </button>
+          <RequestGame initialTitle={query.trim()} />
         </div>
       )}
     </div>

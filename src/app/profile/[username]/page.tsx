@@ -13,7 +13,15 @@ import Avatar from "@/components/ui/avatar";
 
 interface ProfilePageProps {
   params: Promise<{ username: string }>;
+  searchParams: Promise<{ resenhas?: string; sessoes?: string }>;
 }
+
+const REVIEWS_STEP = 10;
+const SESSIONS_STEP = 5;
+const MAX_PAGES = 10;
+
+const toPage = (value?: string) =>
+  Math.min(Math.max(parseInt(value ?? "1", 10) || 1, 1), MAX_PAGES);
 
 interface EntryRow {
   id: number;
@@ -61,8 +69,28 @@ function EmptyBox({ children }: { children: React.ReactNode }) {
   );
 }
 
-async function ProfileContent({ params }: ProfilePageProps) {
+function MoreLink({ href }: { href: string }) {
+  return (
+    <div className="text-center">
+      <Link
+        href={href}
+        scroll={false}
+        className="inline-block bg-[#F3EFE6] hover:bg-[#343A35]/10 border border-[#343A35]/10 text-[#343A35] px-5 py-2 rounded-xl font-medium text-sm transition-colors"
+      >
+        Ver mais
+      </Link>
+    </div>
+  );
+}
+
+async function ProfileContent({ params, searchParams }: ProfilePageProps) {
   const { username } = await params;
+  const query = await searchParams;
+  const reviewsPage = toPage(query.resenhas);
+  const sessionsPage = toPage(query.sessoes);
+  const reviewsLimit = REVIEWS_STEP * reviewsPage;
+  const sessionsLimit = SESSIONS_STEP * sessionsPage;
+
   const supabase = await createClient();
 
   const { data: claimsData } = await supabase.auth.getClaims();
@@ -93,6 +121,18 @@ async function ProfileContent({ params }: ProfilePageProps) {
   const canSeeReviews = isOwn || (!profile.is_private && profile.show_reviews);
   const profilePath = `/profile/${profile.username}`;
 
+  // Monta o link de "Ver mais" preservando o outro parâmetro
+  const moreHref = (next: { resenhas?: number; sessoes?: number }) => {
+    const qs = new URLSearchParams();
+    const r = next.resenhas ?? reviewsPage;
+    const s = next.sessoes ?? sessionsPage;
+    if (r > 1) qs.set("resenhas", String(r));
+    if (s > 1) qs.set("sessoes", String(s));
+    const text = qs.toString();
+    return text ? `${profilePath}?${text}` : profilePath;
+  };
+
+  // Pede um item a mais só para saber se existe próxima página
   const [followersRes, followingRes, entriesRes, sessionsRes, reviewsRes, followRes] =
     await Promise.all([
       supabase
@@ -120,7 +160,7 @@ async function ProfileContent({ params }: ProfilePageProps) {
             .eq("user_id", profile.id)
             .order("played_on", { ascending: false })
             .order("id", { ascending: false })
-            .limit(5)
+            .limit(sessionsLimit + 1)
         : Promise.resolve({ data: [] }),
       canSeeReviews
         ? supabase
@@ -128,7 +168,7 @@ async function ProfileContent({ params }: ProfilePageProps) {
             .select("id, rating, body, minutes_at_review, created_at, games(slug, title)")
             .eq("user_id", profile.id)
             .order("created_at", { ascending: false })
-            .limit(10)
+            .limit(reviewsLimit + 1)
         : Promise.resolve({ data: [] }),
       viewerId && !isOwn
         ? supabase
@@ -143,10 +183,14 @@ async function ProfileContent({ params }: ProfilePageProps) {
   const entries = ((entriesRes.data ?? []) as unknown as EntryRow[]).filter(
     (e) => e.games,
   );
-  const sessions = (sessionsRes.data ?? []) as unknown as SessionRow[];
-  const reviews = ((reviewsRes.data ?? []) as unknown as ReviewRow[]).filter(
-    (r) => r.games,
-  );
+
+  const sessionRows = (sessionsRes.data ?? []) as unknown as SessionRow[];
+  const hasMoreSessions = sessionRows.length > sessionsLimit;
+  const sessions = sessionRows.slice(0, sessionsLimit);
+
+  const reviewRows = (reviewsRes.data ?? []) as unknown as ReviewRow[];
+  const hasMoreReviews = reviewRows.length > reviewsLimit;
+  const reviews = reviewRows.slice(0, reviewsLimit).filter((r) => r.games);
 
   const [sessionSocial, reviewSocial] = await Promise.all([
     loadSocial(supabase, "session", sessions.map((s) => s.id), viewerId),
@@ -285,52 +329,57 @@ async function ProfileContent({ params }: ProfilePageProps) {
             ) : reviews.length === 0 ? (
               <EmptyBox>Nenhuma resenha publicada ainda.</EmptyBox>
             ) : (
-              <div className="space-y-4">
-                {reviews.map((review) => {
-                  const social = reviewSocial.get(review.id);
-                  return (
-                    <div
-                      key={review.id}
-                      className="bg-[#F3EFE6] border border-[#343A35]/10 rounded-xl p-5 space-y-3 shadow-sm"
-                    >
-                      <div className="flex items-center justify-between gap-3">
-                        <Link
-                          href={`/game/${review.games!.slug}`}
-                          className="font-bold text-[#343A35] hover:text-[#66836A] transition-colors truncate"
-                        >
-                          {review.games!.title}
-                        </Link>
-                        <div className="flex items-center gap-1 text-xs text-amber-700 font-medium shrink-0">
-                          <Star className="w-3.5 h-3.5 fill-amber-600 text-amber-600" />
-                          {review.rating}.0
+              <>
+                <div className="space-y-4">
+                  {reviews.map((review) => {
+                    const social = reviewSocial.get(review.id);
+                    return (
+                      <div
+                        key={review.id}
+                        className="bg-[#F3EFE6] border border-[#343A35]/10 rounded-xl p-5 space-y-3 shadow-sm"
+                      >
+                        <div className="flex items-center justify-between gap-3">
+                          <Link
+                            href={`/game/${review.games!.slug}`}
+                            className="font-bold text-[#343A35] hover:text-[#66836A] transition-colors truncate"
+                          >
+                            {review.games!.title}
+                          </Link>
+                          <div className="flex items-center gap-1 text-xs text-amber-700 font-medium shrink-0">
+                            <Star className="w-3.5 h-3.5 fill-amber-600 text-amber-600" />
+                            {review.rating}.0
+                          </div>
+                        </div>
+                        <div className="text-xs text-[#343A35]/70">
+                          {new Date(review.created_at).toLocaleDateString("pt-BR")} •{" "}
+                          {formatHours(review.minutes_at_review)} jogadas
+                        </div>
+                        <p className="text-sm text-[#343A35]/90 leading-relaxed whitespace-pre-line break-words">
+                          {review.body}
+                        </p>
+                        <div className="pt-3 border-t border-[#343A35]/10 space-y-3">
+                          <LikeButton
+                            target={{ kind: "review", id: review.id }}
+                            path={profilePath}
+                            initialCount={social?.likeCount ?? 0}
+                            initialLiked={social?.liked ?? false}
+                            viewerId={viewerId}
+                          />
+                          <Comments
+                            target={{ kind: "review", id: review.id }}
+                            path={profilePath}
+                            comments={social?.comments ?? []}
+                            viewerId={viewerId}
+                          />
                         </div>
                       </div>
-                      <div className="text-xs text-[#343A35]/70">
-                        {new Date(review.created_at).toLocaleDateString("pt-BR")} •{" "}
-                        {formatHours(review.minutes_at_review)} jogadas
-                      </div>
-                      <p className="text-sm text-[#343A35]/90 leading-relaxed whitespace-pre-line break-words">
-                        {review.body}
-                      </p>
-                      <div className="pt-3 border-t border-[#343A35]/10 space-y-3">
-                        <LikeButton
-                          target={{ kind: "review", id: review.id }}
-                          path={profilePath}
-                          initialCount={social?.likeCount ?? 0}
-                          initialLiked={social?.liked ?? false}
-                          viewerId={viewerId}
-                        />
-                        <Comments
-                          target={{ kind: "review", id: review.id }}
-                          path={profilePath}
-                          comments={social?.comments ?? []}
-                          viewerId={viewerId}
-                        />
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
+                    );
+                  })}
+                </div>
+                {hasMoreReviews && reviewsPage < MAX_PAGES && (
+                  <MoreLink href={moreHref({ resenhas: reviewsPage + 1 })} />
+                )}
+              </>
             )}
           </section>
 
@@ -346,62 +395,67 @@ async function ProfileContent({ params }: ProfilePageProps) {
             ) : sessions.length === 0 ? (
               <EmptyBox>Nenhuma sessão registrada ainda.</EmptyBox>
             ) : (
-              <div className="space-y-4">
-                {sessions.map((session) => {
-                  const game = session.library_platforms?.library_entries?.games;
-                  const social = sessionSocial.get(session.id);
-                  return (
-                    <div
-                      key={session.id}
-                      className="bg-[#F3EFE6] border border-[#343A35]/10 rounded-xl p-5 space-y-3 shadow-sm"
-                    >
-                      <div className="flex items-center justify-between text-xs text-[#343A35]/70">
-                        <span className="font-semibold text-[#66836A] bg-[#66836A]/10 px-2 py-0.5 rounded">
-                          {session.library_platforms?.platform ?? "—"}
-                        </span>
-                        <span>
-                          {new Date(`${session.played_on}T00:00:00`).toLocaleDateString("pt-BR")}
-                        </span>
+              <>
+                <div className="space-y-4">
+                  {sessions.map((session) => {
+                    const game = session.library_platforms?.library_entries?.games;
+                    const social = sessionSocial.get(session.id);
+                    return (
+                      <div
+                        key={session.id}
+                        className="bg-[#F3EFE6] border border-[#343A35]/10 rounded-xl p-5 space-y-3 shadow-sm"
+                      >
+                        <div className="flex items-center justify-between text-xs text-[#343A35]/70">
+                          <span className="font-semibold text-[#66836A] bg-[#66836A]/10 px-2 py-0.5 rounded">
+                            {session.library_platforms?.platform ?? "—"}
+                          </span>
+                          <span>
+                            {new Date(`${session.played_on}T00:00:00`).toLocaleDateString("pt-BR")}
+                          </span>
+                        </div>
+                        <h3 className="font-bold text-[#343A35] text-base">
+                          {game ? (
+                            <Link
+                              href={`/game/${game.slug}`}
+                              className="hover:text-[#66836A] transition-colors"
+                            >
+                              {game.title}
+                            </Link>
+                          ) : (
+                            "Jogo"
+                          )}{" "}
+                          <span className="font-normal text-sm text-[#343A35]/80">
+                            — sessão de {formatHours(session.duration_minutes)}
+                          </span>
+                        </h3>
+                        {session.comment && (
+                          <p className="text-sm text-[#343A35]/90 italic break-words">
+                            &quot;{session.comment}&quot;
+                          </p>
+                        )}
+                        <div className="pt-3 border-t border-[#343A35]/10 space-y-3">
+                          <LikeButton
+                            target={{ kind: "session", id: session.id }}
+                            path={profilePath}
+                            initialCount={social?.likeCount ?? 0}
+                            initialLiked={social?.liked ?? false}
+                            viewerId={viewerId}
+                          />
+                          <Comments
+                            target={{ kind: "session", id: session.id }}
+                            path={profilePath}
+                            comments={social?.comments ?? []}
+                            viewerId={viewerId}
+                          />
+                        </div>
                       </div>
-                      <h3 className="font-bold text-[#343A35] text-base">
-                        {game ? (
-                          <Link
-                            href={`/game/${game.slug}`}
-                            className="hover:text-[#66836A] transition-colors"
-                          >
-                            {game.title}
-                          </Link>
-                        ) : (
-                          "Jogo"
-                        )}{" "}
-                        <span className="font-normal text-sm text-[#343A35]/80">
-                          — sessão de {formatHours(session.duration_minutes)}
-                        </span>
-                      </h3>
-                      {session.comment && (
-                        <p className="text-sm text-[#343A35]/90 italic break-words">
-                          &quot;{session.comment}&quot;
-                        </p>
-                      )}
-                      <div className="pt-3 border-t border-[#343A35]/10 space-y-3">
-                        <LikeButton
-                          target={{ kind: "session", id: session.id }}
-                          path={profilePath}
-                          initialCount={social?.likeCount ?? 0}
-                          initialLiked={social?.liked ?? false}
-                          viewerId={viewerId}
-                        />
-                        <Comments
-                          target={{ kind: "session", id: session.id }}
-                          path={profilePath}
-                          comments={social?.comments ?? []}
-                          viewerId={viewerId}
-                        />
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
+                    );
+                  })}
+                </div>
+                {hasMoreSessions && sessionsPage < MAX_PAGES && (
+                  <MoreLink href={moreHref({ sessoes: sessionsPage + 1 })} />
+                )}
+              </>
             )}
           </section>
         </div>
@@ -439,10 +493,10 @@ async function ProfileContent({ params }: ProfilePageProps) {
   );
 }
 
-export default function ProfilePage({ params }: ProfilePageProps) {
+export default function ProfilePage({ params, searchParams }: ProfilePageProps) {
   return (
     <Suspense fallback={<LoadingSpinner text="Carregando perfil..." />}>
-      <ProfileContent params={params} />
+      <ProfileContent params={params} searchParams={searchParams} />
     </Suspense>
   );
 }

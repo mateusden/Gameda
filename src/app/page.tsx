@@ -8,8 +8,15 @@ import LikeButton from "@/components/social/like-button";
 import Comments from "@/components/social/comments";
 import { createClient } from "@/lib/supabase/server";
 import { formatHours } from "@/lib/library";
-import { loadFeed, type FeedItem, type FeedKind } from "@/lib/feed";
+import {
+  loadFeed,
+  FEED_PAGE_SIZE,
+  type FeedItem,
+  type FeedKind,
+} from "@/lib/feed";
 import { loadRecommendations } from "@/lib/recommendations";
+
+const MAX_FEED_PAGES = 10;
 
 const kindLabel: Record<FeedKind, string> = {
   session: "registrou uma sessão",
@@ -17,7 +24,8 @@ const kindLabel: Record<FeedKind, string> = {
   completed: "zerou um jogo",
 };
 
-// Dados fictícios — virão do banco de dados no futuro
+type HomeSearchParams = Promise<{ feed?: string }>;
+
 async function Recommendations() {
   const supabase = await createClient();
   const { data } = await supabase.auth.getClaims();
@@ -95,7 +103,13 @@ function EmptyBox({
   );
 }
 
-async function Feed() {
+async function Feed({ searchParams }: { searchParams: HomeSearchParams }) {
+  const { feed } = await searchParams;
+  const page = Math.min(
+    Math.max(parseInt(feed ?? "1", 10) || 1, 1),
+    MAX_FEED_PAGES,
+  );
+
   const supabase = await createClient();
   const { data } = await supabase.auth.getClaims();
   const viewerId = (data?.claims?.sub as string | undefined) ?? null;
@@ -113,7 +127,11 @@ async function Feed() {
     );
   }
 
-  const { items, followingCount } = await loadFeed(supabase, viewerId);
+  const { items, followingCount, hasMore } = await loadFeed(
+    supabase,
+    viewerId,
+    FEED_PAGE_SIZE * page,
+  );
 
   if (followingCount === 0) {
     return (
@@ -233,11 +251,27 @@ async function Feed() {
             )}
         </article>
       ))}
+
+      {hasMore && page < MAX_FEED_PAGES && (
+        <div className="text-center pt-2">
+          <Link
+            href={`/?feed=${page + 1}`}
+            scroll={false}
+            className="inline-block bg-[#F3EFE6] hover:bg-[#343A35]/10 border border-[#343A35]/10 text-[#343A35] px-5 py-2.5 rounded-xl font-medium text-sm transition-colors"
+          >
+            Ver mais atividades
+          </Link>
+        </div>
+      )}
     </div>
   );
 }
 
-export default function Home() {
+export default function Home({
+  searchParams,
+}: {
+  searchParams: HomeSearchParams;
+}) {
   return (
     <div className="space-y-8 pb-12">
       {/* Boas-vindas */}
@@ -268,7 +302,7 @@ export default function Home() {
             Atividades de quem você segue
           </h2>
           <Suspense fallback={<LoadingSpinner text="Carregando feed..." />}>
-            <Feed />
+            <Feed searchParams={searchParams} />
           </Suspense>
         </div>
 

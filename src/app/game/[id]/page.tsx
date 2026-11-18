@@ -219,6 +219,11 @@ async function GameContent({ params }: GameDetailPageProps) {
           <p className="text-sm sm:text-base text-[#343A35]/90 leading-relaxed pt-2">
             {info.description}
           </p>
+          {igdbGame.summary && (
+            <p className="text-xs text-[#343A35]/60">
+              Descrição original em inglês (fonte: IGDB).
+            </p>
+          )}
 
           <div className="pt-4 border-t border-[#343A35]/10">
             <GameActions

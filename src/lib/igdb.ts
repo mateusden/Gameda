@@ -123,10 +123,15 @@ export async function getGameBySlug(slug: string): Promise<GameInfo | null> {
   return results[0] ?? null;
 }
 
+const SEARCH_FILTER =
+  "version_parent = null & game_type = (0,8,9,10,11)";
+
 export async function searchGames(term: string, limit = 10): Promise<GameInfo[]> {
   const clean = sanitize(term);
   if (!clean) return [];
-  return queryGames(`search "${clean}"; fields ${FIELDS}; limit ${limit};`);
+  return queryGames(
+    `search "${clean}"; fields ${FIELDS}; where ${SEARCH_FILTER}; limit ${limit};`
+  );
 }
 
 export async function getGamesBySlugs(slugs: string[]): Promise<GameInfo[]> {
@@ -138,6 +143,6 @@ export async function getGamesBySlugs(slugs: string[]): Promise<GameInfo[]> {
 
 export async function getPopularGames(limit = 12): Promise<GameInfo[]> {
   return queryGames(
-    `fields ${FIELDS}; where total_rating_count > 200 & version_parent = null & first_release_date != null; sort total_rating_count desc; limit ${limit};`
+    `fields ${FIELDS}; where ${SEARCH_FILTER} & total_rating_count > 200 & first_release_date != null; sort total_rating_count desc; limit ${limit};`
   );
 }

@@ -6,7 +6,13 @@ import { Bell } from "lucide-react";
 import Avatar from "@/components/ui/avatar";
 import { createClient } from "@/lib/supabase/client";
 
-type NotificationType = "follow" | "like" | "comment" | "reply";
+type NotificationType =
+  | "follow"
+  | "like"
+  | "comment"
+  | "reply"
+  | "request_approved"
+  | "request_rejected";
 
 interface GameRef {
   slug: string;
@@ -20,20 +26,25 @@ interface NotificationRow {
   created_at: string;
   review_id: number | null;
   session_id: number | null;
+  request_id: number | null;
   actor: { username: string; avatar_url: string | null } | null;
   recipient: { username: string } | null;
   reviews: { games: GameRef | null } | null;
   sessions: {
-    library_platforms: { library_entries: { games: GameRef | null } | null } | null;
+    library_platforms: {
+      library_entries: { games: GameRef | null } | null;
+    } | null;
   } | null;
+  game_requests: { title: string; igdb_slug: string | null } | null;
 }
 
 const SELECT =
-  "id, type, read_at, created_at, review_id, session_id, " +
+  "id, type, read_at, created_at, review_id, session_id, request_id, " +
   "actor:profiles!actor_id(username, avatar_url), " +
   "recipient:profiles!user_id(username), " +
   "reviews(games(slug, title)), " +
-  "sessions(library_platforms(library_entries(games(slug, title))))";
+  "sessions(library_platforms(library_entries(games(slug, title)))), " +
+  "game_requests(title, igdb_slug)";
 
 function timeAgo(iso: string) {
   const minutes = Math.floor((Date.now() - new Date(iso).getTime()) / 60000);
@@ -47,7 +58,10 @@ function timeAgo(iso: string) {
 }
 
 function describe(n: NotificationRow) {
-  const game = n.reviews?.games ?? n.sessions?.library_platforms?.library_entries?.games ?? null;
+  const game =
+    n.reviews?.games ??
+    n.sessions?.library_platforms?.library_entries?.games ??
+    null;
   const what = n.review_id ? "sua resenha" : "sua sessão";
   const where = game ? ` de ${game.title}` : "";
 
@@ -60,11 +74,22 @@ function describe(n: NotificationRow) {
       return `comentou em ${what}${where}`;
     case "reply":
       return `respondeu ao seu comentário${game ? ` em ${game.title}` : ""}`;
+    case "request_approved":
+      return `aprovou seu pedido${n.game_requests ? ` de ${n.game_requests.title}` : ""}. Já está no catálogo!`;
+    case "request_rejected":
+      return `não pôde incluir seu pedido${n.game_requests ? ` de ${n.game_requests.title}` : ""} no catálogo`;
   }
 }
 
 function hrefFor(n: NotificationRow) {
-  if (n.type === "follow") return n.actor ? `/profile/${n.actor.username}` : "/";
+  if (n.type === "request_approved") {
+    const slug = n.game_requests?.igdb_slug;
+    return slug ? `/game/${slug}` : "/explore";
+  }
+  if (n.type === "request_rejected") return "/explore";
+
+  if (n.type === "follow")
+    return n.actor ? `/profile/${n.actor.username}` : "/";
   if (n.review_id) {
     const slug = n.reviews?.games?.slug;
     if (slug) return `/game/${slug}`;
@@ -74,7 +99,11 @@ function hrefFor(n: NotificationRow) {
   return n.actor ? `/profile/${n.actor.username}` : "/";
 }
 
-export default function NotificationsBell({ className = "flex" }: { className?: string }) {
+export default function NotificationsBell({
+  className = "flex",
+}: {
+  className?: string;
+}) {
   const boxRef = useRef<HTMLDivElement>(null);
   const [userId, setUserId] = useState<string | null>(null);
   const [ready, setReady] = useState(false);
@@ -93,17 +122,19 @@ export default function NotificationsBell({ className = "flex" }: { className?: 
       setReady(true);
     });
 
-    const { data: subscription } = supabase.auth.onAuthStateChange((_event, session) => {
-      setTimeout(() => {
-        if (!active) return;
-        setUserId(session?.user.id ?? null);
-        if (!session) {
-          setUnread(0);
-          setItems(null);
-          setOpen(false);
-        }
-      }, 0);
-    });
+    const { data: subscription } = supabase.auth.onAuthStateChange(
+      (_event, session) => {
+        setTimeout(() => {
+          if (!active) return;
+          setUserId(session?.user.id ?? null);
+          if (!session) {
+            setUnread(0);
+            setItems(null);
+            setOpen(false);
+          }
+        }, 0);
+      },
+    );
 
     return () => {
       active = false;
@@ -140,7 +171,8 @@ export default function NotificationsBell({ className = "flex" }: { className?: 
   useEffect(() => {
     if (!open) return;
     const handleClickOutside = (event: MouseEvent) => {
-      if (boxRef.current && !boxRef.current.contains(event.target as Node)) setOpen(false);
+      if (boxRef.current && !boxRef.current.contains(event.target as Node))
+        setOpen(false);
     };
     const handleEscape = (event: KeyboardEvent) => {
       if (event.key === "Escape") setOpen(false);
@@ -199,7 +231,9 @@ export default function NotificationsBell({ className = "flex" }: { className?: 
       <button
         type="button"
         onClick={toggle}
-        aria-label={unread > 0 ? `Notificações (${unread} novas)` : "Notificações"}
+        aria-label={
+          unread > 0 ? `Notificações (${unread} novas)` : "Notificações"
+        }
         aria-expanded={open}
         className="relative flex cursor-pointer items-center transition-colors hover:text-[#66836A]"
       >
@@ -217,11 +251,14 @@ export default function NotificationsBell({ className = "flex" }: { className?: 
             Notificações
           </p>
 
-          {items === null && <p className="px-4 py-4 text-sm text-[#343A35]/70">Carregando...</p>}
+          {items === null && (
+            <p className="px-4 py-4 text-sm text-[#343A35]/70">Carregando...</p>
+          )}
 
           {items !== null && items.length === 0 && (
             <p className="px-4 py-6 text-center text-sm text-[#343A35]/70">
-              Nada por aqui ainda. Quando alguém seguir, curtir ou comentar, aparece aqui.
+              Nada por aqui ainda. Quando alguém seguir, curtir ou comentar,
+              aparece aqui.
             </p>
           )}
 
@@ -238,15 +275,19 @@ export default function NotificationsBell({ className = "flex" }: { className?: 
                   >
                     <Avatar
                       src={n.actor?.avatar_url}
-                      name={n.actor?.username ?? "?"}
+                      name={n.actor?.username ?? "Gameda"}
                       className="h-8 w-8 text-xs"
                     />
                     <div className="min-w-0 flex-1">
                       <p className="text-sm leading-snug text-[#343A35]">
-                        <strong className="font-semibold">@{n.actor?.username ?? "alguém"}</strong>{" "}
+                        <strong className="font-semibold">
+                          {n.actor ? `@${n.actor.username}` : "Gameda"}
+                        </strong>{" "}
                         {describe(n)}
                       </p>
-                      <span className="text-xs text-[#343A35]/60">{timeAgo(n.created_at)}</span>
+                      <span className="text-xs text-[#343A35]/60">
+                        {timeAgo(n.created_at)}
+                      </span>
                     </div>
                   </Link>
                 </li>

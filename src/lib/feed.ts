@@ -7,7 +7,7 @@ export interface FeedItem {
   key: string;
   kind: FeedKind;
   at: string; // ISO, usado para ordenar
-  dateOnly: boolean; // sessões só têm a data, sem hora
+  dateOnly: boolean; // mantido por compatibilidade com a home
   user: { username: string; avatarUrl: string | null };
   game: { slug: string; title: string };
   platform: string | null;
@@ -20,12 +20,13 @@ export interface FeedItem {
   comments: CommentItem[];
 }
 
-const LIMIT = 20;
+export const FEED_PAGE_SIZE = 20;
 
 interface SessionRow {
   id: number;
   user_id: string;
   played_on: string;
+  created_at: string;
   duration_minutes: number;
   comment: string | null;
   library_platforms: {
@@ -60,7 +61,11 @@ interface LikeRow {
 
 type CommentRow = CommentItem & { review_id: number | null; session_id: number | null };
 
-export async function loadFeed(supabase: SupabaseClient, viewerId: string) {
+export async function loadFeed(
+  supabase: SupabaseClient,
+  viewerId: string,
+  limit = FEED_PAGE_SIZE
+) {
   const { data: follows } = await supabase
     .from("follows")
     .select("following_id")
@@ -68,32 +73,34 @@ export async function loadFeed(supabase: SupabaseClient, viewerId: string) {
 
   const followingIds = (follows ?? []).map((f) => f.following_id as string);
   if (followingIds.length === 0) {
-    return { items: [] as FeedItem[], followingCount: 0 };
+    return { items: [] as FeedItem[], followingCount: 0, hasMore: false };
   }
+
+  // Pede um item a mais em cada consulta só para saber se existe próxima página
+  const fetchLimit = limit + 1;
 
   const [sessionsRes, reviewsRes, completedRes, profilesRes] = await Promise.all([
     supabase
       .from("sessions")
       .select(
-        "id, user_id, played_on, duration_minutes, comment, library_platforms(platform, library_entries(games(slug, title)))"
+        "id, user_id, played_on, created_at, duration_minutes, comment, library_platforms(platform, library_entries(games(slug, title)))"
       )
       .in("user_id", followingIds)
-      .order("played_on", { ascending: false })
-      .order("id", { ascending: false })
-      .limit(LIMIT),
+      .order("created_at", { ascending: false })
+      .limit(fetchLimit),
     supabase
       .from("reviews")
       .select("id, user_id, rating, body, minutes_at_review, created_at, games(slug, title)")
       .in("user_id", followingIds)
       .order("created_at", { ascending: false })
-      .limit(LIMIT),
+      .limit(fetchLimit),
     supabase
       .from("library_entries")
       .select("id, user_id, completed_at, games(slug, title), library_platforms(platform)")
       .in("user_id", followingIds)
       .not("completed_at", "is", null)
       .order("completed_at", { ascending: false })
-      .limit(LIMIT),
+      .limit(fetchLimit),
     supabase.from("profiles").select("id, username, avatar_url").in("id", followingIds),
   ]);
 
@@ -113,8 +120,8 @@ export async function loadFeed(supabase: SupabaseClient, viewerId: string) {
     items.push({
       key: `session-${s.id}`,
       kind: "session",
-      at: `${s.played_on}T00:00:00`,
-      dateOnly: true,
+      at: s.created_at,
+      dateOnly: false,
       user,
       game,
       platform: s.library_platforms?.platform ?? null,
@@ -171,7 +178,8 @@ export async function loadFeed(supabase: SupabaseClient, viewerId: string) {
   }
 
   items.sort((a, b) => b.at.localeCompare(a.at));
-  const top = items.slice(0, LIMIT);
+  const hasMore = items.length > limit;
+  const top = items.slice(0, limit);
 
   // Curtidas e comentários só dos itens que ficaram
   const reviewIds = top.filter((i) => i.kind === "review").map((i) => i.targetId as number);
@@ -218,5 +226,5 @@ export async function loadFeed(supabase: SupabaseClient, viewerId: string) {
     );
   }
 
-  return { items: top, followingCount: followingIds.length };
+  return { items: top, followingCount: followingIds.length, hasMore };
 }

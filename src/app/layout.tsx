@@ -3,6 +3,15 @@ import "./globals.css";
 import { Suspense } from "react";
 import Header from "@/components/layout/header";
 
+import { Asimovian } from "next/font/google";
+
+const asimovian = Asimovian({
+  subsets: ["latin"],
+  weight: "400",
+  variable: "--font-logo",
+  display: "swap",
+});
+
 export const metadata: Metadata = {
   title: "Gameda",
   description: "Plataforma social voltada para videogames",
@@ -14,7 +23,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="pt-BR">
+    <html lang="pt-BR" className={asimovian.variable}>
       <body className="min-h-screen flex flex-col selection:bg-[#66836A] selection:text-white">
         <Suspense
           fallback={

@@ -58,9 +58,12 @@ body {
   font-style: normal;
 }
 
+.asimovian-regular {
+  font-family: "Asimovian", sans-serif;
+  font-weight: 400;
+  font-style: normal;
+}
 .logo {
-  font-family: "Crilo", sans-serif;
-  margin-bottom: -9px;
-  -webkit-text-stroke: 1.2px currentColor; /* Aumenta a espessura do traço */
-  letter-spacing: 0.02em; /* Evita que as letras encostem uma na outra */
+  font-family: var(--font-logo), sans-serif;
+  letter-spacing: 0.02em;
 }

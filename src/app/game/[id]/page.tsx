@@ -18,6 +18,9 @@ import { createClient } from "@/lib/supabase/server";
 import Avatar from "@/components/ui/avatar";
 import LikeButton from "@/components/social/like-button";
 import Comments, { type CommentItem } from "@/components/social/comments";
+import SessionCard from "@/components/game/session-card";
+import EditableReview from "@/components/game/editable-review";
+import ReportButton from "@/components/social/report-button";
 
 interface GameDetailPageProps {
   params: Promise<{ id: string }>;
@@ -158,6 +161,13 @@ async function GameContent({ params }: GameDetailPageProps) {
     0,
   );
 
+  const entryPlatforms = Array.from(
+    new Set([
+      ...(entry?.library_platforms ?? []).map((p) => p.platform),
+      ...info.platforms,
+    ]),
+  );
+
   const canReview = Boolean(viewerId && entry && totalMinutes > 0);
   const needsSession = Boolean(viewerId && entry && totalMinutes === 0);
 
@@ -279,28 +289,16 @@ async function GameContent({ params }: GameDetailPageProps) {
           ) : (
             <div className="space-y-3">
               {mySessions.map((session) => (
-                <div
+                <SessionCard
                   key={session.id}
-                  className="bg-[#F3EFE6] border border-[#343A35]/10 rounded-xl p-4 space-y-2 shadow-sm"
-                >
-                  <div className="flex items-center justify-between text-xs text-[#343A35]/70">
-                    <span className="font-semibold text-[#66836A] bg-[#66836A]/10 px-2 py-0.5 rounded">
-                      {session.platform}
-                    </span>
-                    <span>
-                      {new Date(
-                        `${session.played_on}T00:00:00`,
-                      ).toLocaleDateString("pt-BR")}{" "}
-                      • Duração:{" "}
-                      <strong>{formatHours(session.duration_minutes)}</strong>
-                    </span>
-                  </div>
-                  {session.comment && (
-                    <p className="text-sm text-[#343A35]/90 italic">
-                      &quot;{session.comment}&quot;
-                    </p>
-                  )}
-                </div>
+                  id={session.id}
+                  slug={igdbGame.slug}
+                  platform={session.platform}
+                  playedOn={session.played_on}
+                  minutes={session.duration_minutes}
+                  comment={session.comment}
+                  platforms={entryPlatforms}
+                />
               ))}
             </div>
           )}
@@ -364,6 +362,13 @@ async function GameContent({ params }: GameDetailPageProps) {
                           reviewId={review.id}
                           slug={igdbGame.slug}
                         />
+                        
+                      )}
+                      {review.user_id !== viewerId && (
+                        <ReportButton
+                          viewerId={viewerId}
+                          target={{ kind: "review", id: review.id }}
+                        />
                       )}
                     </div>
                   </div>
@@ -371,9 +376,13 @@ async function GameContent({ params }: GameDetailPageProps) {
                     {new Date(review.created_at).toLocaleDateString("pt-BR")} •{" "}
                     {formatHours(review.minutes_at_review)} jogadas
                   </div>
-                  <p className="text-sm text-[#343A35]/90 leading-relaxed">
-                    {review.body}
-                  </p>
+                  <EditableReview
+                    reviewId={review.id}
+                    slug={igdbGame.slug}
+                    rating={review.rating}
+                    body={review.body}
+                    canEdit={review.user_id === viewerId}
+                  />
                   <div className="pt-3 border-t border-[#343A35]/10 flex-row flex gap-5">
                     <div className="flex items-center gap-5">
                       <LikeButton

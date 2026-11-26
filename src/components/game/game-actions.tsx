@@ -3,8 +3,14 @@
 import { useState, useTransition } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { PlusCircle } from "lucide-react";
-import { addToLibrary, logSession, updateStatus, type ActionResult } from "@/app/actions/library";
+import { PlusCircle, Trash2 } from "lucide-react";
+import {
+  addToLibrary,
+  logSession,
+  removeFromLibrary,
+  updateStatus,
+  type ActionResult,
+} from "@/app/actions/library";
 
 export type StatusKey = "quero_jogar" | "jogando" | "zerado" | "pausado";
 
@@ -16,11 +22,16 @@ const statusOptions: { value: StatusKey; label: string }[] = [
 ];
 
 const todayBr = () =>
-  new Date().toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit", year: "numeric" });
+  new Date().toLocaleDateString("pt-BR", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+  });
 
 function maskDate(value: string) {
   const digits = value.replace(/\D/g, "").slice(0, 8);
-  if (digits.length > 4) return `${digits.slice(0, 2)}/${digits.slice(2, 4)}/${digits.slice(4)}`;
+  if (digits.length > 4)
+    return `${digits.slice(0, 2)}/${digits.slice(2, 4)}/${digits.slice(4)}`;
   if (digits.length > 2) return `${digits.slice(0, 2)}/${digits.slice(2)}`;
   return digits;
 }
@@ -53,17 +64,28 @@ const selectClass =
 const inputClass =
   "bg-[#E9E3D5] border border-[#343A35]/10 rounded-lg px-3 py-2 text-sm text-[#343A35] placeholder:text-[#343A35]/50 outline-none focus:border-[#66836A]/60";
 
-export default function GameActions({ slug, platforms, viewerId, entry }: GameActionsProps) {
+export default function GameActions({
+  slug,
+  platforms,
+  viewerId,
+  entry,
+}: GameActionsProps) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
 
-  const [status, setStatus] = useState<StatusKey>(entry?.status ?? "quero_jogar");
+  const [status, setStatus] = useState<StatusKey>(
+    entry?.status ?? "quero_jogar",
+  );
   const [platform, setPlatform] = useState(platforms[0] ?? "");
 
   const [showSession, setShowSession] = useState(false);
-  const sessionPlatforms = Array.from(new Set([...(entry?.platforms ?? []), ...platforms]));
-  const [sPlatform, setSPlatform] = useState(entry?.platforms[0] ?? platforms[0] ?? "");
+  const sessionPlatforms = Array.from(
+    new Set([...(entry?.platforms ?? []), ...platforms]),
+  );
+  const [sPlatform, setSPlatform] = useState(
+    entry?.platforms[0] ?? platforms[0] ?? "",
+  );
   const [date, setDate] = useState("");
   const [hours, setHours] = useState("1");
   const [mins, setMins] = useState("0");
@@ -145,13 +167,17 @@ export default function GameActions({ slug, platforms, viewerId, entry }: GameAc
             {pending ? "Adicionando..." : "Adicionar à biblioteca"}
           </button>
         </div>
-        {error && <p role="alert" className="text-sm text-[#A9574D] font-medium">{error}</p>}
+        {error && (
+          <p role="alert" className="text-sm text-[#A9574D] font-medium">
+            {error}
+          </p>
+        )}
       </div>
     );
   }
 
   // Já está na biblioteca
-    const handleSession = (event: React.FormEvent) => {
+  const handleSession = (event: React.FormEvent) => {
     event.preventDefault();
 
     const iso = brToIso(date);
@@ -166,14 +192,31 @@ export default function GameActions({ slug, platforms, viewerId, entry }: GameAc
 
     const total = Number(hours || 0) * 60 + Number(mins || 0);
     run(
-      () => logSession({ slug, platform: sPlatform, playedOn: iso, minutes: total, comment }),
+      () =>
+        logSession({
+          slug,
+          platform: sPlatform,
+          playedOn: iso,
+          minutes: total,
+          comment,
+        }),
       () => {
         setShowSession(false);
         setComment("");
         setHours("1");
         setMins("0");
-      }
+      },
     );
+  };
+  const handleRemove = () => {
+    if (
+      !window.confirm(
+        "Remover este jogo da biblioteca? As sessões que você registrou dele serão apagadas. Suas resenhas continuam publicadas.",
+      )
+    ) {
+      return;
+    }
+    run(() => removeFromLibrary(slug));
   };
 
   return (
@@ -210,6 +253,16 @@ export default function GameActions({ slug, platforms, viewerId, entry }: GameAc
           <PlusCircle className="w-5 h-5" />
           Registrar Sessão
         </button>
+
+        <button
+          type="button"
+          onClick={handleRemove}
+          disabled={pending}
+          className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium text-[#343A35] hover:bg-[#343A35]/10 disabled:opacity-60 transition-colors cursor-pointer"
+        >
+          <Trash2 className="w-4 h-4 text-[#A9574D]" />
+          Remover da biblioteca
+        </button>
       </div>
 
       {showSession && (
@@ -219,7 +272,9 @@ export default function GameActions({ slug, platforms, viewerId, entry }: GameAc
         >
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <label className="space-y-1">
-              <span className="text-xs font-medium text-[#343A35]/80">Plataforma</span>
+              <span className="text-xs font-medium text-[#343A35]/80">
+                Plataforma
+              </span>
               {sessionPlatforms.length > 0 ? (
                 <select
                   value={sPlatform}
@@ -242,7 +297,9 @@ export default function GameActions({ slug, platforms, viewerId, entry }: GameAc
             </label>
 
             <label className="space-y-1">
-              <span className="text-xs font-medium text-[#343A35]/80">Data</span>
+              <span className="text-xs font-medium text-[#343A35]/80">
+                Data
+              </span>
               <input
                 type="text"
                 inputMode="numeric"
@@ -256,7 +313,9 @@ export default function GameActions({ slug, platforms, viewerId, entry }: GameAc
             </label>
 
             <div className="space-y-1">
-              <span className="text-xs font-medium text-[#343A35]/80">Duração</span>
+              <span className="text-xs font-medium text-[#343A35]/80">
+                Duração
+              </span>
               <div className="flex items-center gap-2">
                 <input
                   type="number"
@@ -283,7 +342,9 @@ export default function GameActions({ slug, platforms, viewerId, entry }: GameAc
           </div>
 
           <label className="block space-y-1">
-            <span className="text-xs font-medium text-[#343A35]/80">Comentário (opcional)</span>
+            <span className="text-xs font-medium text-[#343A35]/80">
+              Comentário (opcional)
+            </span>
             <textarea
               value={comment}
               onChange={(e) => setComment(e.target.value)}
@@ -313,7 +374,11 @@ export default function GameActions({ slug, platforms, viewerId, entry }: GameAc
         </form>
       )}
 
-      {error && <p role="alert" className="text-sm text-[#A9574D] font-medium">{error}</p>}
+      {error && (
+        <p role="alert" className="text-sm text-[#A9574D] font-medium">
+          {error}
+        </p>
+      )}
     </div>
   );
 }

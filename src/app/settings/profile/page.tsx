@@ -4,6 +4,7 @@ import LoadingSpinner from "@/components/ui/loading-spinner";
 import EditProfileForm from "@/components/profile/edit-profile-form";
 import AvatarUploader from "@/components/profile/avatar-uploader";
 import { createClient } from "@/lib/supabase/server";
+import DeleteAccount from "@/components/profile/delete-account";
 
 interface EditProfilePageProps {
   searchParams: Promise<{ novo?: string }>;
@@ -20,7 +21,9 @@ async function EditProfileContent({ searchParams }: EditProfilePageProps) {
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("id, username, display_name, bio, avatar_url, is_private, show_library, show_sessions, show_reviews")
+    .select(
+      "id, username, display_name, bio, avatar_url, is_private, show_library, show_sessions, show_reviews",
+    )
     .eq("id", userId)
     .single();
 
@@ -29,14 +32,19 @@ async function EditProfileContent({ searchParams }: EditProfilePageProps) {
   return (
     <div className="mx-auto max-w-2xl space-y-6 pb-12">
       <div>
-        <h1 className="text-3xl font-bold tracking-tight text-[#343A35]">Editar perfil</h1>
-        <p className="text-sm text-[#343A35]/70 mt-1">Escolha como você aparece no Gameda.</p>
+        <h1 className="text-3xl font-bold tracking-tight text-[#343A35]">
+          Editar perfil
+        </h1>
+        <p className="text-sm text-[#343A35]/70 mt-1">
+          Escolha como você aparece no Gameda.
+        </p>
       </div>
 
       {novo && (
         <div className="bg-[#66836A]/10 border border-[#66836A]/30 rounded-xl px-4 py-3 text-sm text-[#343A35]">
-          <strong className="text-[#66836A]">Bem-vindo ao Gameda!</strong> Escolha o seu @ abaixo.
-          Seu nome e sua foto vieram do Google, e você pode trocar os dois aqui.
+          <strong className="text-[#66836A]">Bem-vindo ao Gameda!</strong>{" "}
+          Escolha o seu @ abaixo. Seu nome e sua foto vieram do Google, e você
+          pode trocar os dois aqui.
         </div>
       )}
 
@@ -49,11 +57,14 @@ async function EditProfileContent({ searchParams }: EditProfilePageProps) {
       </div>
 
       <EditProfileForm profile={profile} />
+      <DeleteAccount username={profile.username} />
     </div>
   );
 }
 
-export default function EditProfilePage({ searchParams }: EditProfilePageProps) {
+export default function EditProfilePage({
+  searchParams,
+}: EditProfilePageProps) {
   return (
     <Suspense fallback={<LoadingSpinner text="Carregando..." />}>
       <EditProfileContent searchParams={searchParams} />

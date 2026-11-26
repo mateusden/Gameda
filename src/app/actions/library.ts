@@ -236,3 +236,177 @@ export async function deleteReview(reviewId: number, slug: string): Promise<Acti
   revalidatePath(`/game/${slug}`);
   return { ok: true };
 }
+
+interface UpdateSessionInput {
+  sessionId: number;
+  slug: string;
+  platform: string;
+  playedOn: string; // AAAA-MM-DD
+  minutes: number;
+  comment: string;
+}
+
+export async function updateSession(input: UpdateSessionInput): Promise<ActionResult> {
+  const { sessionId, slug, playedOn } = input;
+  const platform = input.platform.trim().slice(0, 60);
+  const comment = input.comment.trim().slice(0, 500);
+  const minutes = Math.round(input.minutes);
+
+  if (!Number.isInteger(sessionId) || sessionId < 1) return { ok: false, error: "Pedido inválido." };
+  if (!SLUG_PATTERN.test(slug)) return { ok: false, error: "Jogo inválido." };
+  if (!platform) return { ok: false, error: "Escolha uma plataforma." };
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(playedOn)) return { ok: false, error: "Data inválida." };
+  if (!Number.isFinite(minutes) || minutes < 1 || minutes > 1440) {
+    return { ok: false, error: "A duração precisa ser entre 1 minuto e 24 horas." };
+  }
+
+  const supabase = await createClient();
+  const userId = await getUserId(supabase);
+  if (!userId) return { ok: false, error: "Entre na sua conta." };
+
+  const { data: game } = await supabase.from("games").select("id").eq("slug", slug).maybeSingle();
+  if (!game) return { ok: false, error: "Jogo não encontrado." };
+
+  const { data: entry } = await supabase
+    .from("library_entries")
+    .select("id")
+    .eq("user_id", userId)
+    .eq("game_id", game.id)
+    .maybeSingle();
+  if (!entry) return { ok: false, error: "Jogo não encontrado na sua biblioteca." };
+
+  // Confere que a sessão é sua e é deste jogo
+  const { data: current } = await supabase
+    .from("sessions")
+    .select("id, library_platforms(entry_id)")
+    .eq("id", sessionId)
+    .eq("user_id", userId)
+    .maybeSingle();
+
+  const lpRaw = current?.library_platforms as unknown;
+  const lp = (Array.isArray(lpRaw) ? lpRaw[0] : lpRaw) as { entry_id: number } | null | undefined;
+  if (!current || lp?.entry_id !== entry.id) return { ok: false, error: "Sessão não encontrada." };
+
+  // Reaproveita a plataforma, ou cria se for nova
+  let { data: platformRow } = await supabase
+    .from("library_platforms")
+    .select("id")
+    .eq("entry_id", entry.id)
+    .eq("platform", platform)
+    .maybeSingle();
+
+  if (!platformRow) {
+    const { data: created, error: createError } = await supabase
+      .from("library_platforms")
+      .insert({ entry_id: entry.id, platform })
+      .select("id")
+      .single();
+    if (createError || !created) return { ok: false, error: "Não foi possível salvar a plataforma." };
+    platformRow = created;
+  }
+
+  const { data: updated, error } = await supabase
+    .from("sessions")
+    .update({
+      platform_id: platformRow.id,
+      played_on: playedOn,
+      duration_minutes: minutes,
+      comment: comment || null,
+    })
+    .eq("id", sessionId)
+    .eq("user_id", userId)
+    .select("id");
+
+  if (error) {
+    if (error.code === "P0001") return { ok: false, error: error.message };
+    return { ok: false, error: "Não foi possível salvar a sessão." };
+  }
+  if (!updated || updated.length === 0) return { ok: false, error: "Sessão não encontrada." };
+
+  revalidatePath("/library");
+  revalidatePath(`/game/${slug}`);
+  return { ok: true };
+}
+
+export async function deleteSession(sessionId: number, slug: string): Promise<ActionResult> {
+  if (!Number.isInteger(sessionId) || sessionId < 1 || !SLUG_PATTERN.test(slug)) {
+    return { ok: false, error: "Pedido inválido." };
+  }
+
+  const supabase = await createClient();
+  const userId = await getUserId(supabase);
+  if (!userId) return { ok: false, error: "Entre na sua conta." };
+
+  const { data: deleted, error } = await supabase
+    .from("sessions")
+    .delete()
+    .eq("id", sessionId)
+    .eq("user_id", userId)
+    .select("id");
+
+  if (error) return { ok: false, error: "Não foi possível apagar a sessão." };
+  if (!deleted || deleted.length === 0) return { ok: false, error: "Sessão não encontrada." };
+
+  revalidatePath("/library");
+  revalidatePath(`/game/${slug}`);
+  return { ok: true };
+}
+
+export async function removeFromLibrary(slug: string): Promise<ActionResult> {
+  if (!SLUG_PATTERN.test(slug)) return { ok: false, error: "Jogo inválido." };
+
+  const supabase = await createClient();
+  const userId = await getUserId(supabase);
+  if (!userId) return { ok: false, error: "Entre na sua conta." };
+
+  const { data: game } = await supabase.from("games").select("id").eq("slug", slug).maybeSingle();
+  if (!game) return { ok: false, error: "Jogo não encontrado." };
+
+  // Plataformas e sessões saem junto (cascata). Resenhas continuam publicadas.
+  const { error } = await supabase
+    .from("library_entries")
+    .delete()
+    .eq("user_id", userId)
+    .eq("game_id", game.id);
+
+  if (error) return { ok: false, error: "Não foi possível remover o jogo." };
+
+  revalidatePath("/library");
+  revalidatePath(`/game/${slug}`);
+  return { ok: true };
+}
+
+export async function updateReview(
+  reviewId: number,
+  slug: string,
+  rating: number,
+  body: string
+): Promise<ActionResult> {
+  const text = body.trim();
+
+  if (!Number.isInteger(reviewId) || reviewId < 1 || !SLUG_PATTERN.test(slug)) {
+    return { ok: false, error: "Pedido inválido." };
+  }
+  if (!Number.isInteger(rating) || rating < 1 || rating > 5) {
+    return { ok: false, error: "Escolha uma nota de 1 a 5 estrelas." };
+  }
+  if (text.length < 10) return { ok: false, error: "Escreva pelo menos 10 caracteres." };
+  if (text.length > 2000) return { ok: false, error: "A resenha pode ter no máximo 2000 caracteres." };
+
+  const supabase = await createClient();
+  const userId = await getUserId(supabase);
+  if (!userId) return { ok: false, error: "Entre na sua conta." };
+
+  const { data: updated, error } = await supabase
+    .from("reviews")
+    .update({ rating, body: text })
+    .eq("id", reviewId)
+    .eq("user_id", userId)
+    .select("id");
+
+  if (error) return { ok: false, error: "Não foi possível salvar a resenha." };
+  if (!updated || updated.length === 0) return { ok: false, error: "Resenha não encontrada." };
+
+  revalidatePath(`/game/${slug}`);
+  return { ok: true };
+}

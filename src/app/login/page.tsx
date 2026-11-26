@@ -3,6 +3,8 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { brToIso, isOldEnough, maskDate, MIN_AGE } from "@/lib/age";
+import Link from "next/link";
 
 type Mode = "entrar" | "criar";
 
@@ -11,7 +13,7 @@ function translateError(message: string) {
   if (message.includes("already registered")) return "Esse e-mail já tem uma conta.";
   if (message.includes("Password should be")) return "A senha precisa ter pelo menos 6 caracteres.";
   if (message.includes("Email not confirmed")) return "Confirme seu e-mail antes de entrar.";
-  if (message.includes("Database error")) return "Não foi possível criar a conta. Tente outro @.";
+  if (message.includes("Database error")) return "Não foi possível criar a conta. Confira os dados e tente de novo.";
   return "Algo deu errado. Tente de novo.";
 }
 
@@ -19,13 +21,16 @@ export default function LoginPage() {
   const router = useRouter();
   const [mode, setMode] = useState<Mode>("entrar");
   const [username, setUsername] = useState("");
+  const [birthDate, setBirthDate] = useState("");
+  const [accepted, setAccepted] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  
+
   const [info, setInfo] = useState<string | null>(null);
-    const handleGoogle = async () => {
+
+  const handleGoogle = async () => {
     setError(null);
     const supabase = createClient();
     const { error } = await supabase.auth.signInWithOAuth({
@@ -55,9 +60,27 @@ export default function LoginPage() {
       return;
     }
 
-    // Criar conta: valida e confere se o @ está livre
+    // Criar conta: valida o @, a idade e confere se o @ está livre
     if (!/^[a-z0-9_]{3,20}$/.test(username)) {
       setError("O @ precisa ter de 3 a 20 caracteres: letras minúsculas, números ou _.");
+      setLoading(false);
+      return;
+    }
+
+    const birthIso = brToIso(birthDate);
+    if (!birthIso || birthIso > new Date().toLocaleDateString("sv-SE")) {
+      setError("Data de nascimento inválida. Use dia/mês/ano, por exemplo 15/11/2000.");
+      setLoading(false);
+      return;
+    }
+    if (!isOldEnough(birthIso)) {
+      setError(`O Gameda é para maiores de ${MIN_AGE} anos.`);
+      setLoading(false);
+      return;
+    }
+
+    if (!accepted) {
+      setError("Aceite os Termos de Uso e a Política de Privacidade para continuar.");
       setLoading(false);
       return;
     }
@@ -79,7 +102,7 @@ export default function LoginPage() {
       password,
       options: {
         emailRedirectTo: `${window.location.origin}/auth/callback`,
-        data: { username },
+        data: { username, birth_date: birthIso },
       },
     });
 
@@ -114,28 +137,48 @@ export default function LoginPage() {
 
         <form onSubmit={handleSubmit} className="space-y-4">
           {mode === "criar" && (
-            <label className="block space-y-1.5">
-              <span className="text-sm font-medium text-[#343A35]">Nome de usuário</span>
-              <div className="relative">
-                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-[#343A35]/50">
-                  @
+            <>
+              <label className="block space-y-1.5">
+                <span className="text-sm font-medium text-[#343A35]">Nome de usuário</span>
+                <div className="relative">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-[#343A35]/50">
+                    @
+                  </span>
+                  <input
+                    required
+                    autoComplete="username"
+                    value={username}
+                    onChange={(e) =>
+                      setUsername(e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, ""))
+                    }
+                    maxLength={20}
+                    placeholder="seunome"
+                    className={`${inputClass} pl-7`}
+                  />
+                </div>
+                <span className="block text-xs text-[#343A35]/60">
+                  3 a 20 caracteres: letras minúsculas, números ou _.
                 </span>
+              </label>
+
+              <label className="block space-y-1.5">
+                <span className="text-sm font-medium text-[#343A35]">Data de nascimento</span>
                 <input
+                  type="text"
+                  inputMode="numeric"
                   required
-                  autoComplete="username"
-                  value={username}
-                  onChange={(e) =>
-                    setUsername(e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, ""))
-                  }
-                  maxLength={20}
-                  placeholder="seunome"
-                  className={`${inputClass} pl-7`}
+                  autoComplete="bday"
+                  value={birthDate}
+                  onChange={(e) => setBirthDate(maskDate(e.target.value))}
+                  placeholder="dd/mm/aaaa"
+                  maxLength={10}
+                  className={inputClass}
                 />
-              </div>
-              <span className="block text-xs text-[#343A35]/60">
-                3 a 20 caracteres: letras minúsculas, números ou _.
-              </span>
-            </label>
+                <span className="block text-xs text-[#343A35]/60">
+                  O Gameda é para maiores de {MIN_AGE} anos. A data não aparece no seu perfil.
+                </span>
+              </label>
+            </>
           )}
 
           <label className="block space-y-1.5">
@@ -165,6 +208,39 @@ export default function LoginPage() {
             />
           </label>
 
+          {mode === "entrar" && (
+            <div className="-mt-2 text-right">
+              <Link
+                href="/recuperar-senha"
+                className="text-xs font-medium text-[#66836A] hover:text-[#263A30]"
+              >
+                Esqueci minha senha
+              </Link>
+            </div>
+          )}
+
+          {mode === "criar" && (
+            <label className="flex items-start gap-2.5 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={accepted}
+                onChange={(e) => setAccepted(e.target.checked)}
+                className="mt-0.5 h-4 w-4 accent-[#66836A] cursor-pointer"
+              />
+              <span className="text-xs text-[#343A35]/80">
+                Tenho {MIN_AGE} anos ou mais e aceito os{" "}
+                <a href="/termos" target="_blank" className="font-semibold text-[#66836A] hover:text-[#263A30]">
+                  Termos de Uso
+                </a>{" "}
+                e a{" "}
+                <a href="/privacidade" target="_blank" className="font-semibold text-[#66836A] hover:text-[#263A30]">
+                  Política de Privacidade
+                </a>
+                .
+              </span>
+            </label>
+          )}
+
           {error && (
             <p role="alert" className="text-sm text-[#A9574D] font-medium">
               {error}
@@ -180,8 +256,8 @@ export default function LoginPage() {
             {loading ? "Aguarde..." : mode === "entrar" ? "Entrar" : "Criar conta"}
           </button>
         </form>
-        
-                <div className="flex items-center gap-3 text-xs text-[#343A35]/50">
+
+        <div className="flex items-center gap-3 text-xs text-[#343A35]/50">
           <span className="h-px flex-1 bg-[#343A35]/10" />
           ou
           <span className="h-px flex-1 bg-[#343A35]/10" />
@@ -200,6 +276,9 @@ export default function LoginPage() {
           </svg>
           Continuar com o Google
         </button>
+        <p className="text-xs text-[#343A35]/60 text-center -mt-3">
+          Ao continuar com o Google, você precisará informar sua data de nascimento (maiores de {MIN_AGE} anos).
+        </p>
 
         <p className="text-sm text-[#343A35]/70 text-center">
           {mode === "entrar" ? "Ainda não tem conta?" : "Já tem uma conta?"}{" "}

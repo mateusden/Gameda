@@ -7,12 +7,18 @@ export async function GET(request: NextRequest) {
   const next = searchParams.get("next") ?? "/";
   // Só aceita caminhos do próprio site
   const safeNext = next.startsWith("/") && !next.startsWith("//") ? next : "/";
+  const isRecovery = safeNext === "/atualizar-senha";
 
   if (code) {
     const supabase = await createClient();
     const { error } = await supabase.auth.exchangeCodeForSession(code);
 
     if (!error) {
+      // Recuperação de senha: vai direto para a tela da nova senha
+      if (isRecovery) {
+        return NextResponse.redirect(`${origin}${safeNext}`);
+      }
+
       // Conta nova com @ automático: leva para escolher o @
       const { data: claims } = await supabase.auth.getClaims();
       const userId = claims?.claims?.sub;
@@ -33,5 +39,7 @@ export async function GET(request: NextRequest) {
     }
   }
 
-  return NextResponse.redirect(`${origin}/login?erro=callback`);
+  return NextResponse.redirect(
+    isRecovery ? `${origin}/recuperar-senha?erro=link` : `${origin}/login?erro=callback`
+  );
 }

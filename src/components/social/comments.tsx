@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { MessageSquare, Trash2 } from "lucide-react";
 import Avatar from "@/components/ui/avatar";
 import { addComment, deleteComment, type Target } from "@/app/actions/social";
+import ReportButton from "@/components/social/report-button";
 
 export interface CommentItem {
   id: number;
@@ -144,7 +145,9 @@ function CommentRow({
             ) : (
               <span className="font-semibold text-[#343A35]">Usuário</span>
             )}
-            <span>{new Date(comment.created_at).toLocaleDateString("pt-BR")}</span>
+            <span>
+              {new Date(comment.created_at).toLocaleDateString("pt-BR")}
+            </span>
           </div>
           <p className="text-sm text-[#343A35]/90 whitespace-pre-line break-words">
             {comment.body}
@@ -170,6 +173,12 @@ function CommentRow({
                 <Trash2 className="w-3.5 h-3.5" />
               </button>
             )}
+            {viewerId && comment.user_id !== viewerId && (
+              <ReportButton
+                viewerId={viewerId}
+                target={{ kind: "comment", id: comment.id }}
+              />
+            )}
           </div>
         </div>
       </div>
@@ -180,7 +189,9 @@ function CommentRow({
             target={target}
             path={path}
             parentId={comment.id}
-            placeholder={username ? `Responder a @${username}...` : "Responder..."}
+            placeholder={
+              username ? `Responder a @${username}...` : "Responder..."
+            }
             onDone={() => setReplying(false)}
           />
         </div>
@@ -189,7 +200,12 @@ function CommentRow({
   );
 }
 
-export default function Comments({ target, path, comments, viewerId }: CommentsProps) {
+export default function Comments({
+  target,
+  path,
+  comments,
+  viewerId,
+}: CommentsProps) {
   const [open, setOpen] = useState(false);
 
   const roots = comments
@@ -216,7 +232,9 @@ export default function Comments({ target, path, comments, viewerId }: CommentsP
       {open && (
         <div className="space-y-4 animate-fadeIn">
           {roots.length === 0 && (
-            <p className="text-xs text-[#343A35]/70">Nenhum comentário ainda.</p>
+            <p className="text-xs text-[#343A35]/70">
+              Nenhum comentário ainda.
+            </p>
           )}
 
           {roots.map((root) => (
@@ -253,7 +271,10 @@ export default function Comments({ target, path, comments, viewerId }: CommentsP
             />
           ) : (
             <p className="text-xs text-[#343A35]/70">
-              <Link href="/login" className="font-semibold text-[#66836A] hover:text-[#263A30]">
+              <Link
+                href="/login"
+                className="font-semibold text-[#66836A] hover:text-[#263A30]"
+              >
                 Entre
               </Link>{" "}
               para comentar.

@@ -1,6 +1,14 @@
 import { Suspense } from "react";
 import Link from "next/link";
-import { Clock, Gamepad2, Lock, MessageSquare, Settings, Shield, Star } from "lucide-react";
+import {
+  Clock,
+  Gamepad2,
+  Lock,
+  MessageSquare,
+  Settings,
+  Shield,
+  Star,
+} from "lucide-react";
 import LoadingSpinner from "@/components/ui/loading-spinner";
 import ProfileLibrary from "@/components/profile/profile-library";
 import FollowButton from "@/components/profile/follow-button";
@@ -10,6 +18,8 @@ import { createClient } from "@/lib/supabase/server";
 import { formatHours, statusLabel, type LibraryGame } from "@/lib/library";
 import { loadSocial } from "@/lib/social";
 import Avatar from "@/components/ui/avatar";
+import ReportButton from "@/components/social/report-button";
+import BlockButton from "@/components/profile/block-button";
 
 interface ProfilePageProps {
   params: Promise<{ username: string }>;
@@ -117,9 +127,21 @@ async function ProfileContent({ params, searchParams }: ProfilePageProps) {
 
   const isOwn = viewerId === profile.id;
   const canSeeLibrary = isOwn || (!profile.is_private && profile.show_library);
-  const canSeeSessions = isOwn || (!profile.is_private && profile.show_sessions);
+  const canSeeSessions =
+    isOwn || (!profile.is_private && profile.show_sessions);
   const canSeeReviews = isOwn || (!profile.is_private && profile.show_reviews);
   const profilePath = `/profile/${profile.username}`;
+
+  const { data: blockRow } =
+    viewerId && !isOwn
+      ? await supabase
+          .from("blocks")
+          .select("blocked_id")
+          .eq("blocker_id", viewerId)
+          .eq("blocked_id", profile.id)
+          .maybeSingle()
+      : { data: null };
+  const iBlocked = Boolean(blockRow);
 
   // Monta o link de "Ver mais" preservando o outro parâmetro
   const moreHref = (next: { resenhas?: number; sessoes?: number }) => {
@@ -133,52 +155,60 @@ async function ProfileContent({ params, searchParams }: ProfilePageProps) {
   };
 
   // Pede um item a mais só para saber se existe próxima página
-  const [followersRes, followingRes, entriesRes, sessionsRes, reviewsRes, followRes] =
-    await Promise.all([
-      supabase
-        .from("follows")
-        .select("*", { count: "exact", head: true })
-        .eq("following_id", profile.id),
-      supabase
-        .from("follows")
-        .select("*", { count: "exact", head: true })
-        .eq("follower_id", profile.id),
-      canSeeLibrary
-        ? supabase
-            .from("library_entries")
-            .select(
-              "id, status, games(slug, title), library_platforms(platform, sessions(duration_minutes))",
-            )
-            .eq("user_id", profile.id)
-        : Promise.resolve({ data: [] }),
-      canSeeSessions
-        ? supabase
-            .from("sessions")
-            .select(
-              "id, played_on, duration_minutes, comment, library_platforms(platform, library_entries(games(slug, title)))",
-            )
-            .eq("user_id", profile.id)
-            .order("played_on", { ascending: false })
-            .order("id", { ascending: false })
-            .limit(sessionsLimit + 1)
-        : Promise.resolve({ data: [] }),
-      canSeeReviews
-        ? supabase
-            .from("reviews")
-            .select("id, rating, body, minutes_at_review, created_at, games(slug, title)")
-            .eq("user_id", profile.id)
-            .order("created_at", { ascending: false })
-            .limit(reviewsLimit + 1)
-        : Promise.resolve({ data: [] }),
-      viewerId && !isOwn
-        ? supabase
-            .from("follows")
-            .select("follower_id")
-            .eq("follower_id", viewerId)
-            .eq("following_id", profile.id)
-            .maybeSingle()
-        : Promise.resolve({ data: null }),
-    ]);
+  const [
+    followersRes,
+    followingRes,
+    entriesRes,
+    sessionsRes,
+    reviewsRes,
+    followRes,
+  ] = await Promise.all([
+    supabase
+      .from("follows")
+      .select("*", { count: "exact", head: true })
+      .eq("following_id", profile.id),
+    supabase
+      .from("follows")
+      .select("*", { count: "exact", head: true })
+      .eq("follower_id", profile.id),
+    canSeeLibrary
+      ? supabase
+          .from("library_entries")
+          .select(
+            "id, status, games(slug, title), library_platforms(platform, sessions(duration_minutes))",
+          )
+          .eq("user_id", profile.id)
+      : Promise.resolve({ data: [] }),
+    canSeeSessions
+      ? supabase
+          .from("sessions")
+          .select(
+            "id, played_on, duration_minutes, comment, library_platforms(platform, library_entries(games(slug, title)))",
+          )
+          .eq("user_id", profile.id)
+          .order("played_on", { ascending: false })
+          .order("id", { ascending: false })
+          .limit(sessionsLimit + 1)
+      : Promise.resolve({ data: [] }),
+    canSeeReviews
+      ? supabase
+          .from("reviews")
+          .select(
+            "id, rating, body, minutes_at_review, created_at, games(slug, title)",
+          )
+          .eq("user_id", profile.id)
+          .order("created_at", { ascending: false })
+          .limit(reviewsLimit + 1)
+      : Promise.resolve({ data: [] }),
+    viewerId && !isOwn
+      ? supabase
+          .from("follows")
+          .select("follower_id")
+          .eq("follower_id", viewerId)
+          .eq("following_id", profile.id)
+          .maybeSingle()
+      : Promise.resolve({ data: null }),
+  ]);
 
   const entries = ((entriesRes.data ?? []) as unknown as EntryRow[]).filter(
     (e) => e.games,
@@ -193,8 +223,18 @@ async function ProfileContent({ params, searchParams }: ProfilePageProps) {
   const reviews = reviewRows.slice(0, reviewsLimit).filter((r) => r.games);
 
   const [sessionSocial, reviewSocial] = await Promise.all([
-    loadSocial(supabase, "session", sessions.map((s) => s.id), viewerId),
-    loadSocial(supabase, "review", reviews.map((r) => r.id), viewerId),
+    loadSocial(
+      supabase,
+      "session",
+      sessions.map((s) => s.id),
+      viewerId,
+    ),
+    loadSocial(
+      supabase,
+      "review",
+      reviews.map((r) => r.id),
+      viewerId,
+    ),
   ]);
 
   let totalMinutes = 0;
@@ -269,13 +309,29 @@ async function ProfileContent({ params, searchParams }: ProfilePageProps) {
               Editar Perfil
             </Link>
           ) : (
-            !profile.is_private && (
+            !profile.is_private &&
+            !iBlocked && (
               <FollowButton
                 profileId={profile.id}
                 viewerId={viewerId}
                 initialFollowing={Boolean(followRes.data)}
               />
             )
+          )}
+          {!isOwn && (
+            <BlockButton
+              profileId={profile.id}
+              username={profile.username}
+              viewerId={viewerId}
+              initialBlocked={iBlocked}
+            />
+          )}
+          {!isOwn && (
+            <ReportButton
+              viewerId={viewerId}
+              target={{ kind: "profile", id: profile.id }}
+              label="Denunciar"
+            />
           )}
         </div>
 
@@ -313,7 +369,9 @@ async function ProfileContent({ params, searchParams }: ProfilePageProps) {
             {canSeeLibrary ? (
               <ProfileLibrary games={games} />
             ) : (
-              <LockedBox>{profile.display_name} não compartilha a biblioteca.</LockedBox>
+              <LockedBox>
+                {profile.display_name} não compartilha a biblioteca.
+              </LockedBox>
             )}
           </section>
 
@@ -325,7 +383,9 @@ async function ProfileContent({ params, searchParams }: ProfilePageProps) {
             </h2>
 
             {!canSeeReviews ? (
-              <LockedBox>{profile.display_name} não compartilha as resenhas.</LockedBox>
+              <LockedBox>
+                {profile.display_name} não compartilha as resenhas.
+              </LockedBox>
             ) : reviews.length === 0 ? (
               <EmptyBox>Nenhuma resenha publicada ainda.</EmptyBox>
             ) : (
@@ -345,14 +405,24 @@ async function ProfileContent({ params, searchParams }: ProfilePageProps) {
                           >
                             {review.games!.title}
                           </Link>
-                          <div className="flex items-center gap-1 text-xs text-amber-700 font-medium shrink-0">
-                            <Star className="w-3.5 h-3.5 fill-amber-600 text-amber-600" />
-                            {review.rating}.0
+                          <div className="flex items-center gap-3 shrink-0">
+                            <div className="flex items-center gap-1 text-xs text-amber-700 font-medium">
+                              <Star className="w-3.5 h-3.5 fill-amber-600 text-amber-600" />
+                              {review.rating}.0
+                            </div>
+                            {!isOwn && (
+                              <ReportButton
+                                viewerId={viewerId}
+                                target={{ kind: "review", id: review.id }}
+                              />
+                            )}
                           </div>
                         </div>
                         <div className="text-xs text-[#343A35]/70">
-                          {new Date(review.created_at).toLocaleDateString("pt-BR")} •{" "}
-                          {formatHours(review.minutes_at_review)} jogadas
+                          {new Date(review.created_at).toLocaleDateString(
+                            "pt-BR",
+                          )}{" "}
+                          • {formatHours(review.minutes_at_review)} jogadas
                         </div>
                         <p className="text-sm text-[#343A35]/90 leading-relaxed whitespace-pre-line break-words">
                           {review.body}
@@ -391,14 +461,17 @@ async function ProfileContent({ params, searchParams }: ProfilePageProps) {
             </h2>
 
             {!canSeeSessions ? (
-              <LockedBox>{profile.display_name} não compartilha as sessões.</LockedBox>
+              <LockedBox>
+                {profile.display_name} não compartilha as sessões.
+              </LockedBox>
             ) : sessions.length === 0 ? (
               <EmptyBox>Nenhuma sessão registrada ainda.</EmptyBox>
             ) : (
               <>
                 <div className="space-y-4">
                   {sessions.map((session) => {
-                    const game = session.library_platforms?.library_entries?.games;
+                    const game =
+                      session.library_platforms?.library_entries?.games;
                     const social = sessionSocial.get(session.id);
                     return (
                       <div
@@ -409,8 +482,16 @@ async function ProfileContent({ params, searchParams }: ProfilePageProps) {
                           <span className="font-semibold text-[#66836A] bg-[#66836A]/10 px-2 py-0.5 rounded">
                             {session.library_platforms?.platform ?? "—"}
                           </span>
-                          <span>
-                            {new Date(`${session.played_on}T00:00:00`).toLocaleDateString("pt-BR")}
+                          <span className="flex items-center gap-3">
+                            {new Date(
+                              `${session.played_on}T00:00:00`,
+                            ).toLocaleDateString("pt-BR")}
+                            {!isOwn && (
+                              <ReportButton
+                                viewerId={viewerId}
+                                target={{ kind: "session", id: session.id }}
+                              />
+                            )}
                           </span>
                         </div>
                         <h3 className="font-bold text-[#343A35] text-base">
@@ -493,7 +574,10 @@ async function ProfileContent({ params, searchParams }: ProfilePageProps) {
   );
 }
 
-export default function ProfilePage({ params, searchParams }: ProfilePageProps) {
+export default function ProfilePage({
+  params,
+  searchParams,
+}: ProfilePageProps) {
   return (
     <Suspense fallback={<LoadingSpinner text="Carregando perfil..." />}>
       <ProfileContent params={params} searchParams={searchParams} />

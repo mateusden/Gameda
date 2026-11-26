@@ -8,7 +8,6 @@ import GameCover from "@/components/ui/game-cover";
 import { useGameSearch } from "@/hooks/use-game-search";
 import UserMenu from "@/components/layout/user-menu";
 import NotificationsBell from "@/components/layout/notifications-bell";
-import { createClient } from "@/lib/supabase/client";
 
 const navItems = [
   { href: "/", label: "Início" },
@@ -50,7 +49,10 @@ function SearchBox({ open, onOpenChange }: SearchBoxProps) {
     };
 
     const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") close();
+      if (event.key === "Escape") {
+        onOpenChange(false);
+        setQuery("");
+      }
     };
 
     document.addEventListener("mousedown", handleClickOutside);
@@ -172,9 +174,6 @@ export default function Header() {
   const pathname = usePathname();
   const [searchOpen, setSearchOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
-  const [profileHref, setProfileHref] = useState<string | null | undefined>(
-    undefined,
-  );
 
   const isActive = (href: string) =>
     href === "/" ? pathname === "/" : pathname.startsWith(href);
@@ -185,47 +184,6 @@ export default function Header() {
         ? "font-semibold text-gameda-primary"
         : "font-medium text-gameda-text hover:text-gameda-primary"
     }`;
-
-  useEffect(() => {
-    const supabase = createClient();
-    let active = true;
-
-    const loadProfileLink = async (userId: string | null) => {
-      if (!userId) {
-        if (active) setProfileHref(null);
-        return;
-      }
-
-      const { data } = await supabase
-        .from("profiles")
-        .select("username")
-        .eq("id", userId)
-        .single();
-
-      if (active) {
-        setProfileHref(
-          data?.username ? `/profile/${data.username}` : "/settings/profile",
-        );
-      }
-    };
-
-    supabase.auth.getUser().then(({ data }) => {
-      void loadProfileLink(data.user?.id ?? null);
-    });
-
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
-      setTimeout(() => {
-        void loadProfileLink(session?.user.id ?? null);
-      }, 0);
-    });
-
-    return () => {
-      active = false;
-      subscription.unsubscribe();
-    };
-  }, []);
 
   useEffect(() => {
     setMenuOpen(false);
@@ -302,25 +260,9 @@ export default function Header() {
 
             <div className="my-1 border-t border-gameda-border" />
 
-            {profileHref ? (
-              <Link
-                href={profileHref}
-                onClick={() => setMenuOpen(false)}
-                className="rounded-xl px-3 py-2.5 text-sm text-gameda-text transition-colors hover:bg-gameda-sage/40"
-              >
-                Meu perfil
-              </Link>
-            ) : profileHref === null ? (
-              <Link
-                href="/login"
-                onClick={() => setMenuOpen(false)}
-                className="rounded-xl px-3 py-2.5 text-sm font-medium text-gameda-primary transition-colors hover:bg-gameda-sage/40"
-              >
-                Entrar
-              </Link>
-            ) : (
-              <div className="h-9 animate-pulse rounded-xl bg-gameda-sage/40" />
-            )}
+            <div className="px-2 py-2">
+              <UserMenu className="flex" />
+            </div>
           </div>
         </nav>
       )}

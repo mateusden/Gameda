@@ -36,6 +36,7 @@ function SearchBox({ open, onOpenChange }: SearchBoxProps) {
 
   useEffect(() => {
     if (open) inputRef.current?.focus();
+    else setQuery("");
   }, [open]);
 
   useEffect(() => {
@@ -105,7 +106,7 @@ function SearchBox({ open, onOpenChange }: SearchBoxProps) {
           aria-label="Buscar jogos"
           className={`min-w-0 bg-transparent text-sm text-gameda-text placeholder:text-gameda-muted outline-none transition-all duration-200 ${
             open
-              ? "ml-2 w-28 opacity-100 sm:w-36 md:w-40 lg:w-48"
+              ? "ml-2 w-16 opacity-100 sm:w-36 md:w-40 lg:w-48"
               : "ml-0 w-0 opacity-0"
           }`}
         />

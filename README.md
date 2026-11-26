@@ -55,6 +55,8 @@ IGDB_CLIENT_SECRET=
 
 Use as credenciais do seu próprio projeto Supabase e do aplicativo cadastrado para acessar a IGDB.
 
+A aplicação também depende das tabelas, relacionamentos e políticas de segurança (RLS) configurados no banco Supabase do projeto. As instruções de criação desse schema ainda não estão documentadas neste README; apenas preencher as variáveis não cria o banco automaticamente.
+
 **Importante:** `SUPABASE_SECRET_KEY` e `IGDB_CLIENT_SECRET` são segredos de servidor. Não use o prefixo `NEXT_PUBLIC_` neles, não os exponha no código do cliente e nunca envie seu `.env.local` ao Git.
 
 ### 3. Inicie o servidor de desenvolvimento

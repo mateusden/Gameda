@@ -36,7 +36,6 @@ function SearchBox({ open, onOpenChange }: SearchBoxProps) {
 
   useEffect(() => {
     if (open) inputRef.current?.focus();
-    else setQuery("");
   }, [open]);
 
   useEffect(() => {

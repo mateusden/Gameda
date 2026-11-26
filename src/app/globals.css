@@ -1,13 +1,18 @@
 @import "tailwindcss";
 
 @theme {
-  --color-gameda-bg: #E9E3D5;
-  --color-gameda-surface: #F3EFE6;
-  --color-gameda-text: #343A35;
-  --color-gameda-primary: #66836A;
-  --color-gameda-primary-dark: #263A30;
-  --color-gameda-accent: #A9574D;
-  --color-gameda-border: #D8D1C3;
+  --color-gameda-bg: #F0EEE5;
+  --color-gameda-surface: #FFFFFF;
+  --color-gameda-text: #252923;
+  --color-gameda-primary: #52765B;
+  --color-gameda-primary-dark: #3E5E47;
+  --color-gameda-sage: #D8DFD2;
+  --color-gameda-accent: #D5A45C;
+  --color-gameda-muted: #77776E;
+  --color-gameda-border: #DCDAD0;
+
+  --font-sans: var(--font-space-grotesk);
+  --font-heading: var(--font-ubuntu);
 
   --animate-fadeIn: fadeIn 0.25s ease-out;
 
@@ -31,8 +36,21 @@ html {
 body {
   background-color: var(--color-gameda-bg);
   color: var(--color-gameda-text);
-  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+  font-family: var(--font-space-grotesk), sans-serif;
   -webkit-font-smoothing: antialiased;
+}
+
+h1,
+h2,
+h3,
+h4 {
+  font-family: var(--font-ubuntu), sans-serif;
+}
+
+.logo {
+  font-family: var(--font-audiowide), sans-serif;
+  font-weight: 400;
+  letter-spacing: 0.015em;
 }
 
 :focus-visible {
@@ -49,21 +67,4 @@ body {
     animation-duration: 0.01ms !important;
     transition-duration: 0.01ms !important;
   }
-}
-
-@font-face {
-  font-family: "Crilo";
-  src: url("/fonts/crilo-demo.otf") format("opentype");
-  font-weight: bold;
-  font-style: normal;
-}
-
-.asimovian-regular {
-  font-family: "Asimovian", sans-serif;
-  font-weight: 400;
-  font-style: normal;
-}
-.logo {
-  font-family: var(--font-logo), sans-serif;
-  letter-spacing: 0.02em;
 }

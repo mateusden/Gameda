@@ -219,7 +219,7 @@ export default function NotificationsBell({
       <Link
         href="/login"
         aria-label="Notificações"
-        className={`${className} cursor-pointer items-center transition-colors hover:text-[#66836A]`}
+        className={`${className} cursor-pointer items-center transition-colors hover:text-gameda-primary`}
       >
         <Bell size={22} />
       </Link>
@@ -235,7 +235,7 @@ export default function NotificationsBell({
           unread > 0 ? `Notificações (${unread} novas)` : "Notificações"
         }
         aria-expanded={open}
-        className="relative flex cursor-pointer items-center transition-colors hover:text-[#66836A]"
+        className="relative flex cursor-pointer items-center transition-colors hover:text-gameda-primary"
       >
         <Bell size={22} />
         {unread > 0 && (
@@ -246,17 +246,17 @@ export default function NotificationsBell({
       </button>
 
       {open && (
-        <div className="absolute right-0 top-full mt-3 w-[min(22rem,calc(100vw-2rem))] overflow-hidden rounded-xl border border-[#343A35]/10 bg-[#F3EFE6] shadow-lg animate-fadeIn">
-          <p className="border-b border-[#343A35]/10 px-4 py-2.5 text-sm font-bold text-[#343A35]">
+        <div className="absolute right-0 top-full mt-3 w-[min(22rem,calc(100vw-2rem))] overflow-hidden rounded-xl border border-gameda-border bg-gameda-surface shadow-lg animate-fadeIn">
+          <p className="border-b border-gameda-border px-4 py-2.5 text-sm font-bold text-gameda-text">
             Notificações
           </p>
 
           {items === null && (
-            <p className="px-4 py-4 text-sm text-[#343A35]/70">Carregando...</p>
+            <p className="px-4 py-4 text-sm text-gameda-text/70">Carregando...</p>
           )}
 
           {items !== null && items.length === 0 && (
-            <p className="px-4 py-6 text-center text-sm text-[#343A35]/70">
+            <p className="px-4 py-6 text-center text-sm text-gameda-text/70">
               Nada por aqui ainda. Quando alguém seguir, curtir ou comentar,
               aparece aqui.
             </p>
@@ -269,8 +269,8 @@ export default function NotificationsBell({
                   <Link
                     href={hrefFor(n)}
                     onClick={() => setOpen(false)}
-                    className={`flex items-start gap-3 rounded-lg p-2.5 transition-colors hover:bg-[#E9E3D5]/70 ${
-                      n.read_at ? "" : "bg-[#66836A]/10"
+                    className={`flex items-start gap-3 rounded-lg p-2.5 transition-colors hover:bg-gameda-sage/50 ${
+                      n.read_at ? "" : "bg-gameda-sage/50"
                     }`}
                   >
                     <Avatar
@@ -279,13 +279,13 @@ export default function NotificationsBell({
                       className="h-8 w-8 text-xs"
                     />
                     <div className="min-w-0 flex-1">
-                      <p className="text-sm leading-snug text-[#343A35]">
+                      <p className="text-sm leading-snug text-gameda-text">
                         <strong className="font-semibold">
                           {n.actor ? `@${n.actor.username}` : "Gameda"}
                         </strong>{" "}
                         {describe(n)}
                       </p>
-                      <span className="text-xs text-[#343A35]/60">
+                      <span className="text-xs text-gameda-text/60">
                         {timeAgo(n.created_at)}
                       </span>
                     </div>

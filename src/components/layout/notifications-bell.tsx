@@ -252,11 +252,11 @@ export default function NotificationsBell({
           </p>
 
           {items === null && (
-            <p className="px-4 py-4 text-sm text-gameda-text/70">Carregando...</p>
+            <p className="px-4 py-4 text-sm text-gameda-muted">Carregando...</p>
           )}
 
           {items !== null && items.length === 0 && (
-            <p className="px-4 py-6 text-center text-sm text-gameda-text/70">
+            <p className="px-4 py-6 text-center text-sm text-gameda-muted">
               Nada por aqui ainda. Quando alguém seguir, curtir ou comentar,
               aparece aqui.
             </p>
@@ -285,7 +285,7 @@ export default function NotificationsBell({
                         </strong>{" "}
                         {describe(n)}
                       </p>
-                      <span className="text-xs text-gameda-text/60">
+                      <span className="text-xs text-gameda-muted">
                         {timeAgo(n.created_at)}
                       </span>
                     </div>

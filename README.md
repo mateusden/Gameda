@@ -1,36 +1,89 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Gameda
 
-## Getting Started
+O **Gameda** é uma plataforma social para quem gosta de videogames. A proposta é reunir biblioteca pessoal, histórico de sessões e avaliações em um espaço onde jogadores também podem descobrir jogos e acompanhar a atividade de outras pessoas.
 
-First, run the development server:
+> Projeto em desenvolvimento.
+
+## O que já existe
+
+- **Catálogo e descoberta:** pesquisa de jogos, páginas individuais e capas obtidas pela IGDB.
+- **Biblioteca pessoal:** organização dos jogos adicionados à conta.
+- **Atividade de jogo:** registro de sessões e avaliações, incluindo resenhas.
+- **Camada social:** perfis, seguidores, curtidas e comentários.
+- **Notificações:** avisos sobre interações e pedidos de inclusão de jogos.
+- **Segurança e comunidade:** bloqueio de usuários, denúncias e gerenciamento de conta.
+- **Conta e acesso:** autenticação com Supabase, fluxo de recuperação e atualização de senha.
+
+As funcionalidades e a interface continuam evoluindo.
+
+## Tecnologias
+
+- [Next.js](https://nextjs.org/) 16 — App Router
+- [React](https://react.dev/) 19 e [TypeScript](https://www.typescriptlang.org/)
+- [Tailwind CSS](https://tailwindcss.com/) 4
+- [Supabase](https://supabase.com/) — autenticação e banco de dados
+- [IGDB API](https://www.igdb.com/api) — catálogo e informações dos jogos
+- [Lucide](https://lucide.dev/) — ícones
+
+## Executar localmente
+
+### Pré-requisitos
+
+- Node.js compatível com a versão do Next.js usada pelo projeto
+- npm
+- Um projeto no Supabase
+- Credenciais de API da IGDB (Twitch)
+
+### 1. Instale as dependências
+
+```bash
+npm install
+```
+
+### 2. Configure as variáveis de ambiente
+
+Crie um arquivo `.env.local` na raiz do projeto:
+
+```env
+NEXT_PUBLIC_SUPABASE_URL=
+NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=
+SUPABASE_SECRET_KEY=
+
+IGDB_CLIENT_ID=
+IGDB_CLIENT_SECRET=
+```
+
+Use as credenciais do seu próprio projeto Supabase e do aplicativo cadastrado para acessar a IGDB.
+
+**Importante:** `SUPABASE_SECRET_KEY` e `IGDB_CLIENT_SECRET` são segredos de servidor. Não use o prefixo `NEXT_PUBLIC_` neles, não os exponha no código do cliente e nunca envie seu `.env.local` ao Git.
+
+### 3. Inicie o servidor de desenvolvimento
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Abra [http://localhost:3000](http://localhost:3000).
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Scripts
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+| Comando | Descrição |
+| --- | --- |
+| `npm run dev` | Inicia o servidor de desenvolvimento |
+| `npm run build` | Gera a versão de produção |
+| `npm run start` | Inicia a versão de produção |
+| `npm run lint` | Executa o ESLint |
 
-## Learn More
+## Estrutura do projeto
 
-To learn more about Next.js, take a look at the following resources:
+```text
+src/
+├── app/          # Rotas, páginas e Route Handlers do Next.js
+├── components/  # Componentes organizados por área da aplicação
+├── hooks/       # Hooks reutilizáveis
+└── lib/          # Integrações e lógica compartilhada
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Status
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+O Gameda está em desenvolvimento ativo. Recursos, estrutura e identidade visual podem mudar conforme o projeto amadurece.

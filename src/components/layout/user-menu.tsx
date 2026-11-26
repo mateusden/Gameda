@@ -81,7 +81,7 @@ export default function UserMenu({ className = "flex" }: { className?: string })
     return (
       <Link
         href="/login"
-        className={`${className} items-center rounded-xl bg-[#66836A] px-3.5 py-1.5 text-sm font-medium text-white transition-colors hover:bg-[#263A30]`}
+        className={`${className} items-center rounded-xl bg-gameda-primary px-3.5 py-1.5 text-sm font-medium text-white transition-colors hover:bg-gameda-primary-dark`}
       >
         Entrar
       </Link>
@@ -94,7 +94,7 @@ export default function UserMenu({ className = "flex" }: { className?: string })
         href={`/profile/${state.username}`}
         title={state.displayName}
         aria-label={`Perfil de @${state.username}`}
-        className="flex cursor-pointer items-center gap-2 transition-colors hover:text-[#66836A] "
+        className="flex cursor-pointer items-center gap-2 transition-colors hover:text-gameda-primary "
       >
         <Avatar src={state.avatarUrl} name={state.username} className="w-8 h-8 text-xs" />
         <span className="hidden max-w-32 truncate text-base font-medium sm:inline">

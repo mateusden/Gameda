@@ -97,7 +97,7 @@ export default function UserMenu({ className = "flex" }: { className?: string })
         className="flex cursor-pointer items-center gap-2 transition-colors hover:text-gameda-primary "
       >
         <Avatar src={state.avatarUrl} name={state.username} className="w-8 h-8 text-xs" />
-        <span className="hidden max-w-32 truncate text-base font-medium sm:inline">
+        <span className="inline max-w-32 truncate text-sm font-medium">
           @{state.username}
         </span>
       </Link>
